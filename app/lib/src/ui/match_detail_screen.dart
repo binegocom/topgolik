@@ -79,7 +79,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                     Column(children: [
                       Text(
                         match.hasScore
-                            ? match.home.score.toString() + ' : ' + match.away.score.toString()
+                            ? '${match.home.score} : ${match.away.score}'
                             : '– : –',
                         style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 30),
                       ),

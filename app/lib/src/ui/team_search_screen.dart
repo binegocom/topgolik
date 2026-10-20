@@ -176,7 +176,7 @@ class _TeamSearchScreenState extends State<TeamSearchScreen> {
           ),
           trailing: Icon(
             team != null ? Icons.chevron_right_rounded : Icons.info_outline,
-            color: team != null ? TopgolikApp.accent : Colors.white38,
+            color: team != null ? StadiumColors.green : Colors.white38,
           ),
         ),
       ),
