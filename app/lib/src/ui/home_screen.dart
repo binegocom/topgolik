@@ -156,22 +156,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _selectTab(int index) {
     if (index == _tab) return;
     setState(() => _tab = index);
-    if (index == 2) _refreshFixture(silent: true);
   }
 
   void _selectQuick(int index) {
     setState(() => _quickTab = index);
-    if (index == 3) {
-      _fixtureDate = DateTime.now().add(const Duration(days: 1));
-      _fixtureFilter = 0;
-      _selectTab(2);
-      _refreshFixture();
-    } else if (index == 4) {
-      _fixtureDate = DateTime.now();
-      _fixtureFilter = 2;
-      _selectTab(2);
-      _refreshFixture();
-    }
+    if (index == 0) return;
+    _fixtureDate = index == 3
+        ? DateTime.now().add(const Duration(days: 1))
+        : DateTime.now();
+    _fixtureFilter = index == 1 ? 1 : index == 4 ? 2 : 0;
+    _selectTab(2);
+    _refreshFixture();
   }
 
   void _changeFixtureDate(int shift) {
