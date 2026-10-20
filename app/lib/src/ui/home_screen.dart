@@ -7,6 +7,7 @@ import '../data/api_client.dart';
 import '../data/favorite_store.dart';
 import '../models/football_match.dart';
 import 'match_detail_screen.dart';
+import 'team_search_screen.dart';
 import 'topgolik_app.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -148,7 +149,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(width: 9),
           Text(t.appName, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900, letterSpacing: -0.7)),
         ]),
-        actions: [IconButton(tooltip: t.refresh, icon: const Icon(Icons.refresh_rounded), onPressed: _busy ? null : () => _loadMatches()), const SizedBox(width: 8)],
+        actions: [
+          IconButton(
+            tooltip: t.searchTeams,
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => TeamSearchScreen(api: _api)),
+            ),
+          ),
+          IconButton(
+            tooltip: t.refresh,
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _busy ? null : () => _loadMatches(),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: RefreshIndicator(
         color: TopgolikApp.accent,
