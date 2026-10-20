@@ -22,3 +22,5 @@ Never fabricate an event, score, club, logo, lineup or status in the running app
 - OpenLigaDB current-matchday data is imported separately from ESPN every ten minutes, with tomorrow sampled hourly. The provider does not reliably distinguish live from scheduled games, so it never labels an unconfirmed match as live.
 - Scores are taken only from upstream resultTypeID=2 (full-time result); absent score values remain null. Historical season backfill, other countries, and actual live detection require additional verified providers.
 - OpenLigaDB supports user-contributed scores. Verify provenance, attribution, match accuracy and redistribution permission before production.
+
+- Default OpenLigaDB leagues are `bl2,bl3` to avoid duplicating the ESPN `ger.1` first-division feed. Do not configure overlapping competitions across providers until canonical event mapping/deduplication is implemented.
