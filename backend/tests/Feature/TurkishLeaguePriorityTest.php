@@ -103,7 +103,7 @@ final class TurkishLeaguePriorityTest extends TestCase
         $turkish = $this->league('other-provider', 'division-1', '1. Lig', 'Türkiye');
 
         $this->match($foreign, 'foreign-live', '2026-10-21 18:00:00', 'live');
-        $turkishMatch = $this->match($turkish, 'turkish-live', '2026-10-21 23:00:00', 'live');
+        $turkishMatch = $this->match($turkish, 'turkish-live', '2026-10-20 23:30:00', 'live');
         $this->match($turkish, 'turkish-next-day', '2026-10-22 12:00:00', 'live');
 
         $this->getJson('/api/v1/matches?date=2026-10-21&status=live&offset_minutes=120')
