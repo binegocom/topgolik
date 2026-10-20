@@ -19,7 +19,7 @@ void main() {
         return http.Response(jsonEncode({
           'featured': [for (final name in names) {'name': name, 'team': null}],
           'results': [],
-        }), 200);
+        }), 200, headers: {'content-type': 'application/json; charset=utf-8'});
       }),
     );
     addTearDown(api.dispose);
