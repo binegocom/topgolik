@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FootballMatch;
 use App\Models\League;
+use App\Support\LeaguePriority;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,12 +25,18 @@ final class MatchController extends Controller
         $date = $input['date'] ?? CarbonImmutable::now()->addMinutes($offset)->toDateString();
         $start = CarbonImmutable::parse($date.' 00:00:00', 'UTC')->subMinutes($offset);
         $query = FootballMatch::query()
+            ->join('leagues', 'football_matches.league_id', '=', 'leagues.id')
+            ->select('football_matches.*')
             ->with(['league', 'homeTeam', 'awayTeam'])
-            ->where('starts_at', '>=', $start)
-            ->where('starts_at', '<', $start->addDay());
-        if (isset($input['league'])) { $query->where('league_id', $input['league']); }
-        if (isset($input['status'])) { $query->where('status', $input['status']); }
-        $page = $query->orderBy('starts_at')->orderBy('id')->paginate(100);
+            ->where('football_matches.starts_at', '>=', $start)
+            ->where('football_matches.starts_at', '<', $start->addDay());
+        if (isset($input['league'])) { $query->where('football_matches.league_id', $input['league']); }
+        if (isset($input['status'])) { $query->where('football_matches.status', $input['status']); }
+        // Apply league priority before pagination so Turkish fixtures are never pushed to a later page.
+        $page = $query->orderByRaw(LeaguePriority::sqlOrder())
+            ->orderBy('football_matches.starts_at')
+            ->orderBy('football_matches.id')
+            ->paginate(100);
         return response()->json([
             'data' => $page->getCollection()->map(fn (FootballMatch $match) => $this->serialize($match)),
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
@@ -43,7 +50,11 @@ final class MatchController extends Controller
 
     public function leagues(): JsonResponse
     {
-        return response()->json(['data' => League::query()->orderBy('name')->get(['id','name','country','provider','external_id','synced_at'])]);
+        return response()->json(['data' => League::query()
+            ->orderByRaw(LeaguePriority::sqlOrder())
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get(['id','name','country','provider','external_id','synced_at'])]);
     }
 
     public function health(): JsonResponse
