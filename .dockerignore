@@ -1,0 +1,7 @@
+.git
+**/.env
+**/vendor
+**/.dart_tool
+**/build
+**/node_modules
+**/.DS_Store
