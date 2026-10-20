@@ -16,3 +16,9 @@ This repository is NOT production-ready until the following are verified.
 ## Data principles
 
 Never fabricate an event, score, club, logo, lineup or status in the running application. All match data has traceable provider keys and ingestion timestamps. External payloads must be validated, allow-listed and stored using stable identifiers. A source failure never clears successful data; stale results remain explicitly timestamped.
+
+## OpenLigaDB adapter
+
+- OpenLigaDB current-matchday data is imported separately from ESPN every ten minutes, with tomorrow sampled hourly. The provider does not reliably distinguish live from scheduled games, so it never labels an unconfirmed match as live.
+- Scores are taken only from upstream resultTypeID=2 (full-time result); absent score values remain null. Historical season backfill, other countries, and actual live detection require additional verified providers.
+- OpenLigaDB supports user-contributed scores. Verify provenance, attribution, match accuracy and redistribution permission before production.
