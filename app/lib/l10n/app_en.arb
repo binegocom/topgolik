@@ -25,5 +25,13 @@
   "noLeagues": "No leagues available yet",
   "dataSource": "Data source",
   "home": "Home",
-  "seeAll": "See all"
+  "seeAll": "See all",
+  "searchTeams": "Search teams",
+  "searchHint": "Enter a team name",
+  "recommendedTeams": "Recommended teams",
+  "noTeamResults": "No teams found",
+  "teamDataUnavailable": "Team data is not available yet.",
+  "teamMatches": "Team matches",
+  "clearSearch": "Clear search",
+  "searchResults": "Search results"
 }
