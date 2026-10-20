@@ -70,5 +70,8 @@
   "events": "Eventi",
   "comingSoon": "Nessun dato disponibile",
   "leagueInfo": "Panoramica campionato",
-  "selectDate": "Scegli data"
+  "selectDate": "Scegli data",
+  "transfers": "Trasferimenti",
+  "videos": "Video",
+  "trending": "Tendenze"
 }
