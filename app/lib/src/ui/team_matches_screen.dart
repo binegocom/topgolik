@@ -92,7 +92,7 @@ class _TeamMatchesScreenState extends State<TeamMatchesScreen> {
                 Card(
                   color: TopgolikApp.panel,
                   child: ListTile(
-                    title: Text(match.home.name + ' – ' + match.away.name),
+                    title: Text('${match.home.name} – ${match.away.name}'),
                     subtitle: Text(match.league.name),
                     trailing: Text(
                       match.hasScore
