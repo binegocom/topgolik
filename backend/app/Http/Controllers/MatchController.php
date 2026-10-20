@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FootballMatch;
 use App\Models\League;
+use App\Models\Team;
 use App\Support\LeaguePriority;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -55,6 +56,29 @@ final class MatchController extends Controller
             ->orderBy('name')
             ->orderBy('id')
             ->get(['id','name','country','provider','external_id','synced_at'])]);
+    }
+
+
+    public function teamMatches(Team $team): JsonResponse
+    {
+        $page = FootballMatch::query()
+            ->with(['league', 'homeTeam', 'awayTeam'])
+            ->where(function ($query) use ($team): void {
+                $query->where('home_team_id', $team->id)
+                    ->orWhere('away_team_id', $team->id);
+            })
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id')
+            ->paginate(30);
+
+        return response()->json([
+            'data' => $page->getCollection()->map(fn (FootballMatch $match) => $this->serialize($match)),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'total' => $page->total(),
+            ],
+        ]);
     }
 
     public function health(): JsonResponse
