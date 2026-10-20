@@ -37,13 +37,20 @@ class TopgolikApi {
     return decoded;
   }
 
-  Future<MatchPage> matches({required DateTime date, int page = 1}) async {
+  Future<MatchPage> matches({
+    required DateTime date,
+    int page = 1,
+    int? leagueId,
+    bool liveOnly = false,
+  }) async {
     final local = DateTime(date.year, date.month, date.day);
     final formatted = '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
     final data = await _get('/matches', {
       'date': formatted,
       'offset_minutes': local.timeZoneOffset.inMinutes.toString(),
       'page': page.toString(),
+      if (leagueId != null) 'league': leagueId.toString(),
+      if (liveOnly) 'status': 'live',
     });
     final entries = data['data'];
     final meta = data['meta'];

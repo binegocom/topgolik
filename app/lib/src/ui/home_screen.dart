@@ -66,14 +66,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _loadMatches({bool silent = false, bool append = false}) async {
-    if (_busy && silent) { return; }
+    if (_busy && (silent || append)) { return; }
     final requestId = ++_requestId;
     final page = append ? _page + 1 : 1;
     final date = _date;
+    final leagueId = _leagueId;
+    final liveOnly = _tab == 1;
     _busy = true;
     if (!silent && mounted) { setState(() { _loading = true; _error = null; }); }
     try {
-      final result = await _api.matches(date: date, page: page);
+      final result = await _api.matches(
+        date: date,
+        page: page,
+        leagueId: leagueId,
+        liveOnly: liveOnly,
+      );
       if (!mounted || requestId != _requestId) { return; }
       setState(() {
         _matches = append ? [..._matches, ...result.items] : result.items;
@@ -86,16 +93,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted || requestId != _requestId) { return; }
       setState(() { _loading = false; _error = 'network'; });
     } finally {
-      _busy = false;
+      if (requestId == _requestId) { _busy = false; }
     }
+  }
+
+  void _resetSelection() {
+    _matches = [];
+    _page = _lastPage = 1;
+    _error = null;
+    _loading = true;
+  }
+
+  void _changeLeague(int? id) {
+    if (_leagueId == id) { return; }
+    setState(() { _leagueId = id; _resetSelection(); });
+    _loadMatches();
+  }
+
+  void _changeTab(int index) {
+    if (_tab == index) { return; }
+    setState(() { _tab = index; _resetSelection(); });
+    _loadMatches();
   }
 
   void _changeDate(int days) {
     setState(() {
       _date = DateTime(_date.year, _date.month, _date.day + days);
-      _matches = [];
-      _page = _lastPage = 1;
-      _error = null;
+      _resetSelection();
     });
     if (_scrollController.hasClients) { _scrollController.jumpTo(0); }
     _loadMatches();
@@ -187,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       bottomNavigationBar: NavigationBar(
         height: 72,
         selectedIndex: _tab,
-        onDestinationSelected: (index) => setState(() => _tab = index),
+        onDestinationSelected: _changeTab,
         destinations: [
           NavigationDestination(icon: const Icon(Icons.sports_soccer_outlined), selectedIcon: const Icon(Icons.sports_soccer), label: t.all),
           NavigationDestination(icon: const Icon(Icons.sensors_outlined), selectedIcon: const Icon(Icons.sensors), label: t.live),
@@ -225,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             DropdownMenuItem<int?>(value: null, child: Text(t.allLeagues, overflow: TextOverflow.ellipsis)),
             ..._leagues.map((l) => DropdownMenuItem<int?>(value: l.id, child: Text(l.name, overflow: TextOverflow.ellipsis))),
           ],
-          onChanged: (id) => setState(() => _leagueId = id),
+          onChanged: _changeLeague,
         ),
       );
 
