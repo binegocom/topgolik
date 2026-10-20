@@ -25,5 +25,13 @@
   "noLeagues": "Nessun campionato disponibile",
   "dataSource": "Fonte dati",
   "home": "Home",
-  "seeAll": "Mostra tutto"
+  "seeAll": "Mostra tutto",
+  "searchTeams": "Cerca squadre",
+  "searchHint": "Inserisci il nome della squadra",
+  "recommendedTeams": "Squadre consigliate",
+  "noTeamResults": "Nessuna squadra trovata",
+  "teamDataUnavailable": "I dati di questa squadra non sono ancora disponibili.",
+  "teamMatches": "Partite della squadra",
+  "clearSearch": "Cancella ricerca",
+  "searchResults": "Risultati di ricerca"
 }

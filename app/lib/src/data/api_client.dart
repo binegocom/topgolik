@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import '../models/football_match.dart';
+import '../models/team_search.dart';
 
 class MatchPage {
   const MatchPage({required this.items, required this.currentPage, required this.lastPage});
@@ -67,6 +68,25 @@ class TopgolikApi {
   Future<FootballMatch> match(int id) async {
     final data = await _get('/matches/$id');
     return FootballMatch.fromJson(data['data'] as Map<String, dynamic>);
+  }
+
+  Future<TeamSearchResponse> searchTeams({String query = ''}) async {
+    final term = query.trim();
+    final data = await _get('/search/teams', term.isEmpty ? const {} : {'q': term});
+    return TeamSearchResponse.fromJson(data);
+  }
+
+  Future<MatchPage> teamMatches({required int teamId, int page = 1}) async {
+    final data = await _get('/teams/$teamId/matches', {'page': page.toString()});
+    final entries = data['data'], meta = data['meta'];
+    if (entries is! List || meta is! Map<String, dynamic>) {
+      throw const FormatException('Invalid team match response.');
+    }
+    return MatchPage(
+      items: entries.map((v) => FootballMatch.fromJson(v as Map<String, dynamic>)).toList(),
+      currentPage: (meta['current_page'] as num).toInt(),
+      lastPage: (meta['last_page'] as num).toInt(),
+    );
   }
 
   void dispose() => _client.close();
