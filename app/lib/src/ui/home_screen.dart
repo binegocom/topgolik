@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home_rounded), label: t.home),
           NavigationDestination(icon: const Icon(Icons.emoji_events_outlined), selectedIcon: const Icon(Icons.emoji_events), label: t.leagues),
           NavigationDestination(icon: const Icon(Icons.calendar_month_outlined), selectedIcon: const Icon(Icons.calendar_month), label: t.matches),
-          NavigationDestination(icon: const Icon(Icons.sports_jersey_outlined), selectedIcon: const Icon(Icons.sports_jersey), label: t.teams),
+          NavigationDestination(icon: const Icon(Icons.groups_outlined), selectedIcon: const Icon(Icons.groups), label: t.teams),
           NavigationDestination(icon: const Icon(Icons.menu_rounded), label: t.more),
         ],
       ),

@@ -5,7 +5,7 @@ import '../data/api_client.dart';
 import '../models/football_match.dart';
 import '../models/team_search.dart';
 import 'match_detail_screen.dart';
-import 'topgolik_app.dart';
+import 'design/topgolik_ui.dart';
 
 class TeamMatchesScreen extends StatefulWidget {
   const TeamMatchesScreen({super.key, required this.api, required this.team});
@@ -90,7 +90,7 @@ class _TeamMatchesScreenState extends State<TeamMatchesScreen> {
             else
               for (final match in _matches)
                 Card(
-                  color: TopgolikApp.panel,
+                  color: StadiumColors.surface,
                   child: ListTile(
                     title: Text('${match.home.name} – ${match.away.name}'),
                     subtitle: Text(match.league.name),
