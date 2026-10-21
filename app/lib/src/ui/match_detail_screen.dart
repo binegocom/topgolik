@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/api_client.dart';
 import '../models/football_match.dart';
+import '../models/match_center.dart';
 import 'design/topgolik_ui.dart';
 
 class MatchDetailScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class MatchDetailScreen extends StatefulWidget {
 
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
   late Future<FootballMatch> _future;
+  Future<MatchCenterData>? _centerFuture;
   int _tab = 0;
 
   @override
@@ -24,7 +26,19 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     _load();
   }
 
-  void _load() => _future = widget.api.match(widget.matchId);
+  void _load() {
+    _future = widget.api.match(widget.matchId);
+    _centerFuture = _tab == 0 ? null : widget.api.matchCenter(widget.matchId);
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _tab = index;
+      if (index > 0) {
+        _centerFuture ??= widget.api.matchCenter(widget.matchId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +123,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 child: Row(children: [
                   for (var i = 0; i < tabs.length; i++) ...[
                     TopgolikPill(label: tabs[i], selected: _tab == i,
-                      onPressed: () => setState(() => _tab = i)),
+                      onPressed: () => _selectTab(i)),
                     const SizedBox(width: 7),
                   ],
                 ]),
@@ -130,9 +144,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                   ]),
                 )
               else
-                TopgolikPanel(
-                  child: EmptyFootballState(title: tabs[_tab], details: t.noDetails),
-                ),
+                _detailsSection(match, t.noDetails, t.connectionError, t.retry),
             ],
           );
         },
@@ -144,4 +156,113 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     Expanded(child: Text(label, style: const TextStyle(color: StadiumColors.muted))),
     Expanded(child: Text(value, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w700))),
   ]);
+
+  Widget _detailsSection(
+    FootballMatch match, String noData, String errorText, String retryLabel,
+  ) {
+    final t = AppLocalizations.of(context);
+    return FutureBuilder<MatchCenterData>(
+      future: _centerFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return EmptyFootballState(
+            title: errorText,
+            details: noData,
+            retryLabel: retryLabel,
+            onRetry: () => setState(() =>
+              _centerFuture = widget.api.matchCenter(widget.matchId)),
+          );
+        }
+        final data = snapshot.data!;
+        if (!data.supported) {
+          return TopgolikPanel(child: EmptyFootballState(title: noData));
+        }
+
+        if (_tab == 1) {
+          if (data.homeStats.isEmpty && data.awayStats.isEmpty) {
+            return TopgolikPanel(child: EmptyFootballState(title: noData));
+          }
+          return Column(children: [
+            _detailList(match.home.name,
+              data.homeStats.map((stat) => _labelValue(stat.label, stat.value)).toList()),
+            const SizedBox(height: 10),
+            _detailList(match.away.name,
+              data.awayStats.map((stat) => _labelValue(stat.label, stat.value)).toList()),
+          ]);
+        }
+
+        if (_tab == 2) {
+          if (data.homePlayers.isEmpty && data.awayPlayers.isEmpty) {
+            return TopgolikPanel(child: EmptyFootballState(title: noData));
+          }
+          return Column(children: [
+            _detailList(match.home.name, data.homePlayers.map(_playerRow).toList()),
+            const SizedBox(height: 10),
+            _detailList(match.away.name, data.awayPlayers.map(_playerRow).toList()),
+          ]);
+        }
+
+        if (data.events.isEmpty) {
+          return TopgolikPanel(child: EmptyFootballState(title: noData));
+        }
+        return _detailList(t.events, data.events.map((event) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(
+              width: 48,
+              child: Text(event.minute ?? '–',
+                style: const TextStyle(color: StadiumColors.green, fontWeight: FontWeight.w800)),
+            ),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(event.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                if (event.description != null && event.description != event.title) ...[
+                  const SizedBox(height: 3),
+                  Text(event.description!,
+                    style: const TextStyle(color: StadiumColors.muted, fontSize: 12)),
+                ],
+              ],
+            )),
+          ]),
+        )).toList());
+      },
+    );
+  }
+
+  Widget _detailList(String title, List<Widget> entries) =>
+      TopgolikPanel(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+          const Divider(color: StadiumColors.border, height: 20),
+          ...entries,
+        ],
+      ));
+
+  Widget _playerRow(MatchCenterPlayer player) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(children: [
+      const Icon(Icons.person_outline, size: 19, color: StadiumColors.green),
+      const SizedBox(width: 9),
+      Expanded(child: Text(player.name,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.w600))),
+      if (player.position != null)
+        Text(player.position!, style: const TextStyle(color: StadiumColors.muted)),
+    ]),
+  );
+
+  Widget _labelValue(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(children: [
+      Expanded(child: Text(label, style: const TextStyle(color: StadiumColors.muted))),
+      Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+    ]),
+  );
+
 }

@@ -26,6 +26,8 @@ final class CheckProviderFreshness extends Command
         ];
         $observed = DB::table('provider_sync_runs')
             ->where('success', true)
+            // Tomorrow's successful prefetch must never hide today's failed scoreboard sync.
+            ->where('target_date', now('UTC')->toDateString())
             ->select('provider', 'league_external_id')
             ->selectRaw('MAX(finished_at) AS last_ok')
             ->groupBy('provider', 'league_external_id')
