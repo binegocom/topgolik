@@ -12,6 +12,14 @@ return [
         ['label' => 'Fenerbahçe', 'aliases' => ['Fenerbahçe', 'Fenerbahce', 'Fenerbahçe SK']],
         ['label' => 'Beşiktaş', 'aliases' => ['Beşiktaş', 'Besiktas', 'Beşiktaş JK']],
     ],
+    'api_football' => [
+        'enabled' => filter_var(env('TOPGOLIK_API_FOOTBALL_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'key' => (string) env('TOPGOLIK_API_FOOTBALL_KEY', ''),
+        'country' => (string) env('TOPGOLIK_API_FOOTBALL_COUNTRY', 'Turkey'),
+        'daily_budget' => (int) env('TOPGOLIK_API_FOOTBALL_DAILY_BUDGET', 80),
+        'minute_budget' => (int) env('TOPGOLIK_API_FOOTBALL_MINUTE_BUDGET', 8),
+        'auto_sync' => filter_var(env('TOPGOLIK_API_FOOTBALL_AUTO_SYNC', false), FILTER_VALIDATE_BOOLEAN),
+    ],
     'fpl' => [
         'enabled' => filter_var(env('TOPGOLIK_FPL_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
         'ttl' => (int) env('TOPGOLIK_FPL_CACHE_SECONDS', 1800),
