@@ -31,3 +31,18 @@ docker compose logs --tail=150 scheduler
 ```
 
 When the health command fails, inspect `provider_sync_runs` for affected leagues and upstream permission/rate limits. An empty installation needs an initial successful provider sync before the health check passes. In a production setup feed log warnings to a real alert destination, verify receipt and maintain bounded retention for historical monitoring rows according to your policy.
+
+## Team catalog & crests (important)
+
+Scoreboards only return clubs taking part in fetched fixtures. To populate the league/team directory and source-provided crests **even if there are no games today**, import official provider team lists after migrations:
+
+```sh
+docker compose exec api php artisan teams:sync-catalog
+# Or separately:
+docker compose exec api php artisan teams:sync-catalog --provider=espn
+docker compose exec api php artisan teams:sync-catalog --provider=openligadb --season=2026
+```
+
+Team catalogs refresh daily at 04:00 (scheduler container); manual command gives immediate results. The source is allowed to fail for an unsupported competition. Do not fabricate missing clubs, competition IDs or crests. Only competitions in `TOPGOLIK_ESPN_LEAGUES` and `TOPGOLIK_OPENLIGA_LEAGUES` are queried. To apply backend source changes inside Docker, **rebuild** the images with `docker compose -f compose.simulator.yaml up -d --build api scheduler gateway` before executing commands; Flutter hot reload alone cannot update Laravel code.
+
+**Important**: Existing ESPN / OpenLigaDB endpoints are unofficial or crowdsourced and their scores and logos need publishing-rights review. Complete worldwide/current lower-division coverage is not guaranteed.

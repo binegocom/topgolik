@@ -81,9 +81,19 @@ final class MatchIngestor
 
     private function saveTeam(array $team): Team
     {
+        $attrs = ['name' => $team['name']];
+        if (is_string($team['abbreviation'] ?? null) && trim($team['abbreviation']) !== '') {
+            $attrs['abbreviation'] = $team['abbreviation'];
+        }
+        // A sparse game-day response must not erase a crest imported from
+        // the full provider team catalog or an earlier match response.
+        $logo = $team['logo_url'] ?? null;
+        if (is_string($logo) && str_starts_with($logo, 'https://')) {
+            $attrs['logo_url'] = $logo;
+        }
         return Team::updateOrCreate(
             ['provider' => $this->provider->id(), 'external_id' => $team['external_id']],
-            ['name' => $team['name'], 'abbreviation' => $team['abbreviation'], 'logo_url' => $team['logo_url']],
+            $attrs,
         );
     }
 }

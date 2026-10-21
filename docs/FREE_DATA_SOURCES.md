@@ -39,3 +39,9 @@ Do not mistake code licenses for upstream sports-data licenses. Restrict provide
 Product invariants: Turkish leagues ahead of all other leagues; 9 curated teams in exact configured order; no fake runtime matches, player identities, goals or news.
 Source-scoped IDs prevent storage collisions but do not deduplicate the same real-world match across two providers; canonical ID mapping is a release gate.
 Production needs actual source probes, monitoring, iOS release build, Android release build and tests for data timeliness and correctness.
+
+## Source-backed team directory and logos
+
+`php artisan teams:sync-catalog` now populates entire returned club catalog for each **configured** ESPN league via `/teams` and for each configured OpenLigaDB league via `/getavailableteams/{league}/{season}`. This is independent of today's matches. Only source-provided IDs, names and HTTPS crest URLs are imported. A missing crest in a later match payload cannot erase a previously verified crest. Team identity remains provider-scoped; unsupported competitions and the nine pinned suggestions without a verified source match remain unavailable. Historical archives without team crests will not produce fabricated logos. Production publishing rights for externally hosted team crests are a separate prerequisite.
+
+TheSportsDB public free API is **not** an acceptable zero-cost app-store solution: the official 2026 terms state app-store publication requires a paid subscription. The source has limited free search and rate limits. It is intentionally not integrated.
