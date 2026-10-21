@@ -49,7 +49,7 @@ Terms and image rights: https://www.api-football.com/terms
 - Import teams independently via teams?league=ID&season=2026, preserving original names, IDs and HTTPS image URLs.
 - Only when --fixtures is specified, import source fixtures and score status via fixtures?league=ID&season=2026&date=YYYY-MM-DD&timezone=UTC.
 - SQL records are provider-scoped. No unavailable league, match, athlete or logo is synthesized.
-- Shared Laravel cache lock limits the app to 80 requests/day and 8/min by default, below the upstream free cap. No automatic retries.
+- The bulk CLI spaces requests eight seconds apart to respect the default 8/min budget. A ten-league catalog import can therefore take more than a minute. Shared Laravel cache lock limits the app to 80 requests/day and 8/min by default, below the upstream free cap. No automatic retries.
 - If the API returns an error or a paginated response, stop instead of persisting incomplete data.
 - Opt-in TOPGOLIK_API_FOOTBALL_AUTO_SYNC=true schedules **catalog only** updates once daily. A 100/day quota cannot deliver continuous worldwide live matches.
 

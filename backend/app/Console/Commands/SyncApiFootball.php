@@ -66,7 +66,19 @@ final class SyncApiFootball extends Command
             return self::FAILURE;
         }
 
+        // The free account also has a 10/min upstream ceiling.
+        // Throttle this bulk CLI independently of the shared quota lock so
+        // a normal 10-league import cannot exhaust the 8/min app safety cap.
+        $previousCall = false;
+        $pace = static function () use (&$previousCall): void {
+            if ($previousCall) {
+                sleep(8);
+            }
+            $previousCall = true;
+        };
+
         try {
+            $pace();
             $leagues = $catalog->discover($country, $season);
         } catch (\Throwable $error) {
             Log::warning('API-Football league discovery failed', ['exception' => $error::class]);
@@ -119,6 +131,7 @@ final class SyncApiFootball extends Command
             $externalId = $id.':'.$season;
 
             try {
+                $pace();
                 $teams = $catalog->teams($id, $season);
                 $this->line("{$league['name']} [{$id}]: {$teams['teams']} teams; {$teams['logos']} logos");
             } catch (\Throwable $error) {
@@ -131,6 +144,7 @@ final class SyncApiFootball extends Command
 
             if ($this->option('fixtures')) {
                 try {
+                    $pace();
                     $stats = $recorder->run(
                         'apifootball', $externalId, str_replace('-', '', $date),
                         fn (): array => $ingestor->ingest($externalId, str_replace('-', '', $date)),
