@@ -39,3 +39,7 @@ Importing the same source/season again is idempotent. The repository contains so
 Repositories surveyed by stars and activity: hudl/open-data, probberechts/soccerdata, openfootball/football.json, OpenLigaDB/OpenLigaDB-Samples, omkarcloud/flashscore-scraper, Ryzellx/football-live-api, apdmatos/sofascore-api. GitHub stars are not provider uptime or legal authorization. StatsBomb's open event data is a different model and does not belong in the scoreboard pipeline. Unofficial scraped FotMob/Flashscore/SofaScore sources are NOT production-enabled without verified coverage, reliability and data terms.
 
 The completed-season source is only invoked explicitly; it does not provide real-time scores. Unsupported competitions should not silently show invented results.
+
+### Premier League player data (FPL)
+
+FPL's no-key public `bootstrap-static/` JSON is exposed through `GET /api/v1/players/premier-league?q=...&limit=30`. The backend caches a single verified payload for at least five minutes (default 30), validates upstream types, and returns only source-provided player/club/stat fields. No external API key or extra dependency. It covers **only the English Premier League** and is not a replacement for world-wide player stats. This undocumented endpoint has no uptime, unlimited-requests or commercial redistribution guarantee. Disable quickly with `TOPGOLIK_FPL_ENABLED=false` if rights or reliability are not established.

@@ -12,6 +12,10 @@ return [
         ['label' => 'Fenerbahçe', 'aliases' => ['Fenerbahçe', 'Fenerbahce', 'Fenerbahçe SK']],
         ['label' => 'Beşiktaş', 'aliases' => ['Beşiktaş', 'Besiktas', 'Beşiktaş JK']],
     ],
+    'fpl' => [
+        'enabled' => filter_var(env('TOPGOLIK_FPL_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'ttl' => (int) env('TOPGOLIK_FPL_CACHE_SECONDS', 1800),
+    ],
     'openfootball' => [
         // Verified against football.json's public 2024-25 directory; availability varies by season.
         'leagues' => [
