@@ -73,5 +73,15 @@
   "selectDate": "Choose date",
   "transfers": "Transfers",
   "videos": "Videos",
-  "trending": "Trending"
+  "trending": "Trending",
+  "standingsProvisional": "Provisional table calculated from stored final scores. Not an official or complete ranking.",
+  "standingsUnavailable": "No verified final results are stored for this season.",
+  "standingsPlayed": "P",
+  "standingsDifference": "GD",
+  "standingsPoints": "Pts",
+  "standingsSeason": "Season",
+  "standingsSeasonStart": "Season begins",
+  "standingsJuly": "July",
+  "standingsJanuary": "January",
+  "standingsCounted": "Matches counted"
 }

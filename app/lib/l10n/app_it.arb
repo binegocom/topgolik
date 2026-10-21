@@ -73,5 +73,15 @@
   "selectDate": "Scegli data",
   "transfers": "Trasferimenti",
   "videos": "Video",
-  "trending": "Tendenze"
+  "trending": "Tendenze",
+  "standingsProvisional": "Classifica provvisoria calcolata dai risultati finali registrati. Non ufficiale né completa.",
+  "standingsUnavailable": "Nessun risultato finale confermato registrato per questa stagione.",
+  "standingsPlayed": "PG",
+  "standingsDifference": "DR",
+  "standingsPoints": "Pt",
+  "standingsSeason": "Stagione",
+  "standingsSeasonStart": "Inizio stagione",
+  "standingsJuly": "Luglio",
+  "standingsJanuary": "Gennaio",
+  "standingsCounted": "Partite conteggiate"
 }

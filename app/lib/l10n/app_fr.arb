@@ -73,5 +73,15 @@
   "selectDate": "Choisir une date",
   "transfers": "Transferts",
   "videos": "Vidéos",
-  "trending": "Tendances"
+  "trending": "Tendances",
+  "standingsProvisional": "Classement provisoire calculé à partir des résultats finaux enregistrés. Ni officiel ni complet.",
+  "standingsUnavailable": "Aucun résultat final vérifié enregistré pour cette saison.",
+  "standingsPlayed": "MJ",
+  "standingsDifference": "DB",
+  "standingsPoints": "Pts",
+  "standingsSeason": "Saison",
+  "standingsSeasonStart": "Début de saison",
+  "standingsJuly": "Juillet",
+  "standingsJanuary": "Janvier",
+  "standingsCounted": "Matchs pris en compte"
 }
