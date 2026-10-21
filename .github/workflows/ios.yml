@@ -1,0 +1,32 @@
+name: iOS Simulator CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ios-simulator:
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generate iOS runner
+        run: |
+          flutter pub get
+          flutter create --platforms=ios --project-name topgolik --org com.binego .
+      - name: Analyze and test Flutter source
+        run: |
+          flutter analyze
+          flutter test
+      - name: Build unsigned iOS simulator app
+        run: flutter build ios --simulator --no-codesign --debug --dart-define=TOPGOLIK_API_URL=https://api.topgolik.com/api/v1
