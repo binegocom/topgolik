@@ -39,3 +39,10 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug --dart-define=TOPGOLIK_API_URL=https://api.topgolik.com/api/v1
+      - name: Save Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: topgolik-android-debug
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
