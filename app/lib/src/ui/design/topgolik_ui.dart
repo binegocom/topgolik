@@ -35,12 +35,12 @@ class TopgolikWordmark extends StatelessWidget {
             BoxShadow(color: Color(0x334A8DFF), blurRadius: 16, offset: Offset(0, 5)),
           ],
         ),
-        child: Icon(Icons.sports_soccer_rounded, color: Colors.white, size: size * .87),
+        child: Icon(Icons.sports_soccer, color: Colors.white, size: size * .87),
       ),
       const SizedBox(width: 10),
       Text.rich(
         TextSpan(children: [
-          TextSpan(text: 'top', style: TextStyle(
+          TextSpan(text: 'Top', style: TextStyle(
             color: Colors.white, fontSize: size, fontWeight: FontWeight.w900,
             letterSpacing: -.8,
           )),
@@ -171,7 +171,7 @@ class TeamCrest extends StatelessWidget {
     return Container(
       height: size,
       width: size,
-      padding: EdgeInsets.all(size >= 32 ? 5 : 3),
+      padding: EdgeInsets.all(size >= 32 ? 5.0 : 3.0),
       decoration: BoxDecoration(
         color: StadiumColors.raised,
         borderRadius: BorderRadius.circular(size * .32),
