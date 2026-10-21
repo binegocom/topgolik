@@ -146,7 +146,8 @@ final class TeamCatalogSync
                     'name' => ($provider === 'openligadb' && $existingLeague !== null)
                         ? $existingLeague->name : $name,
                     'country' => $country ?: $existingLeague?->country,
-                    'synced_at' => now('UTC'),
+                    // Catalog refresh is NOT evidence of a successful matchday sync.
+                    // Do not mutate the scoreboard ingestion timestamp here.
                 ],
             );
 
