@@ -2,6 +2,7 @@
 namespace App\Console\Commands;
 
 use App\Services\MatchIngestor;
+use App\Services\ProviderSyncRecorder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -10,7 +11,7 @@ final class SyncMatches extends Command
     protected $signature = 'matches:sync {--date=today : today, tomorrow or YYYY-MM-DD}';
     protected $description = 'Fetch enabled football leagues into PostgreSQL';
 
-    public function handle(MatchIngestor $ingestor): int
+    public function handle(MatchIngestor $ingestor, ProviderSyncRecorder $recorder): int
     {
         $option = (string) $this->option('date');
         $date = match ($option) {
@@ -31,7 +32,8 @@ final class SyncMatches extends Command
         $failures = 0;
         foreach ($leagues as $league) {
             try {
-                $totals = $ingestor->ingest($league, str_replace('-', '', $date));
+                $totals = $recorder->run('espn', $league, str_replace('-', '', $date),
+                    fn (): array => $ingestor->ingest($league, str_replace('-', '', $date)));
                 $this->line("{$league}: {$totals['stored']} saved / {$totals['fetched']} returned");
             } catch (\Throwable $error) {
                 $failures++;

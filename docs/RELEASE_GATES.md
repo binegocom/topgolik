@@ -51,3 +51,14 @@ FPL's no-key public `bootstrap-static/` JSON is exposed through `GET /api/v1/pla
 ## Stored-data coverage snapshot
 
 `GET /api/v1/coverage` reports actual ingested league/source counts (scheduled, live, finished), last match sync and last league ingest. Results are bounded to 500 leagues and cached for 60 seconds. The endpoint explicitly reports stored data only, **not** upstream coverage, freshness SLA or licensing status. No API keys, private identifiers or fake matches are returned. Operational alerting, provider probe jobs and dashboard authentication remain release gates tracked in GitHub Issue #16.
+
+## Provider ingestion monitoring (code-level verification)
+
+The additive `provider_sync_runs` migration captures per-provider/league success, failure class (not payload/secrets), finished time, latency, fetched and stored counts. Both scheduled ESPN and OpenLigaDB sync commands record attempts, including exceptions. A scheduled `matches:check-providers` command validates each enabled configured league every 15 minutes; it emits log warnings at most once an hour per failing feed and a failed exit code when the last successful ingest is missing or too old (45 minutes by default). To run manually:
+
+```bash
+php artisan migrate --force
+php artisan matches:check-providers --max-age-minutes=45
+```
+
+Failure logs alone are **not** a delivered push/email alert: connect the configured log output to an operator notification system and validate delivery before production. The check detects sync freshness, not the provider's real-time match completeness. ESPN polling is every five minutes to reduce unnecessary unauthenticated calls; hourly tomorrow sync remains unchanged. DB migrations are additive; no live row deletions are executed.
