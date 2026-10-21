@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/api_client.dart';
 import '../models/football_match.dart';
+import '../models/league_standings.dart';
 import 'design/topgolik_ui.dart';
 import 'match_detail_screen.dart';
 
@@ -18,6 +19,7 @@ class LeagueDetailScreen extends StatefulWidget {
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   DateTime _date = DateTime.now();
   int _tab = 0;
+  late Future<LeagueStandings> _standings;
   int _page = 0;
   int _lastPage = 1;
   int _serial = 0;
@@ -29,6 +31,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   void initState() {
     super.initState();
     _load();
+    _loadStandings();
   }
 
   Future<void> _load({bool append = false}) async {
@@ -58,6 +61,14 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     } finally {
       if (mounted && serial == _serial) setState(() => _busy = false);
     }
+  }
+
+  void _loadStandings() {
+    final now = DateTime.now();
+    _standings = widget.api.standings(
+      leagueId: widget.league.id,
+      season: now.month < 7 ? now.year - 1 : now.year,
+    );
   }
 
   void _shift(int byDays) {
@@ -95,7 +106,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           ]),
           const SizedBox(height: 14),
           if (_tab == 1)
-            EmptyFootballState(title: t.dataUnavailable, details: t.noDetails)
+            _standingsPanel(t)
           else ...[
             TopgolikPanel(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -142,4 +153,82 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       ),
     );
   }
+
+  Widget _standingsPanel(AppLocalizations t) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      TopgolikPanel(
+        child: Text(t.standingsProvisional,
+          style: const TextStyle(fontSize: 12, color: StadiumColors.muted)),
+      ),
+      const SizedBox(height: 12),
+      FutureBuilder<LeagueStandings>(
+        future: _standings,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
+            return EmptyFootballState(
+              title: t.connectionError,
+              retryLabel: t.retry,
+              onRetry: () => setState(_loadStandings),
+            );
+          }
+          final data = snapshot.data!;
+          if (data.rows.isEmpty) {
+            return EmptyFootballState(title: t.standingsUnavailable);
+          }
+          return TopgolikPanel(
+            padding: const EdgeInsets.all(10),
+            child: Column(children: [
+              Text(
+                '${t.standingsCounted}: ${data.matchesCounted}',
+                style: const TextStyle(color: StadiumColors.muted, fontSize: 11),
+              ),
+              const SizedBox(height: 14),
+              Row(children: [
+                const Expanded(child: SizedBox.shrink()),
+                _metric(t.standingsPlayed),
+                _metric(t.standingsDifference),
+                _metric(t.standingsPoints),
+              ]),
+              const Divider(color: StadiumColors.border),
+              for (final row in data.rows) ...[
+                Row(children: [
+                  SizedBox(width: 27, child: Text(
+                    '${row.position}', textAlign: TextAlign.center,
+                    style: const TextStyle(color: StadiumColors.muted))),
+                  TeamCrest(url: row.team.logoUrl, size: 24),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(
+                    row.team.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  )),
+                  _metric('${row.played}'),
+                  _metric('${row.goalDifference}'),
+                  _metric('${row.points}', highlighted: true),
+                ]),
+                const Divider(color: StadiumColors.border, height: 20),
+              ],
+            ]),
+          );
+        },
+      ),
+    ],
+  );
+
+  Widget _metric(String label, {bool highlighted = false}) => SizedBox(
+    width: 33,
+    child: Text(label, textAlign: TextAlign.center, style: TextStyle(
+      fontSize: 11,
+      color: highlighted ? StadiumColors.green : StadiumColors.muted,
+      fontWeight: highlighted ? FontWeight.w800 : FontWeight.w500,
+    )),
+  );
+
 }
