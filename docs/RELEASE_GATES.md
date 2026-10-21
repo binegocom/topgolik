@@ -62,3 +62,5 @@ php artisan matches:check-providers --max-age-minutes=45
 ```
 
 Failure logs alone are **not** a delivered push/email alert: connect the configured log output to an operator notification system and validate delivery before production. The check detects sync freshness, not the provider's real-time match completeness. ESPN polling is every five minutes to reduce unnecessary unauthenticated calls; hourly tomorrow sync remains unchanged. DB migrations are additive; no live row deletions are executed.
+
+Provider freshness checks are keyed to the current UTC target date; successful tomorrow prefetches do not mask a missing current-day sync. These checks cannot prove every expected match is present.
