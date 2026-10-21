@@ -6,9 +6,13 @@ import '../../l10n/app_localizations.dart';
 import '../data/api_client.dart';
 import '../data/favorite_store.dart';
 import '../models/football_match.dart';
+import '../models/team_search.dart';
+import 'content_screens.dart';
+import 'design/topgolik_ui.dart';
+import 'league_detail_screen.dart';
 import 'match_detail_screen.dart';
+import 'team_matches_screen.dart';
 import 'team_search_screen.dart';
-import 'topgolik_app.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,110 +23,209 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _api = TopgolikApi();
-  final _favorites = FavoriteStore();
-  final _scrollController = ScrollController();
-  Timer? _refreshTimer;
-  DateTime _date = DateTime.now();
-  List<FootballMatch> _matches = [];
+  final _store = FavoriteStore();
+
+  DateTime _fixtureDate = DateTime.now();
+  List<FootballMatch> _homeMatches = [];
+  List<FootballMatch> _fixtureMatches = [];
   List<LeagueInfo> _leagues = [];
-  Set<int> _favoriteIds = {};
-  int _page = 1;
-  int _lastPage = 1;
-  int _requestId = 0;
+  List<FeaturedTeam> _featured = [];
+  Set<int> _favorites = {};
+
+  Timer? _timer;
   int _tab = 0;
+  int _quickTab = 0;
+  int _fixtureFilter = 0;
   int? _leagueId;
-  bool _loading = true;
-  bool _busy = false;
-  String? _error;
+  int _fixturePage = 0;
+  int _fixtureLastPage = 1;
+  int _homeSerial = 0;
+  int _fixtureSerial = 0;
+  bool _homeBusy = true;
+  bool _homeError = false;
+  bool _fixtureBusy = true;
+  bool _fixtureError = false;
+  bool _leagueBusy = true;
+  bool _teamBusy = true;
   bool _resumed = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadLocalData();
-    _loadMatches();
-    _loadLeagues();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) {
-      if (_resumed && !_busy) { _loadMatches(silent: true); }
+    _restoreFavorites();
+    _refreshHome();
+    _refreshFixture();
+    _refreshLeagues();
+    _refreshFeatured();
+    _timer = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (!_resumed) return;
+      _refreshHome(silent: true);
+      if (_tab == 2) _refreshFixture(silent: true);
     });
   }
 
-  Future<void> _loadLocalData() async {
+  Future<void> _restoreFavorites() async {
     try {
-      final ids = await _favorites.load();
-      if (mounted) { setState(() => _favoriteIds = ids); }
+      final saved = await _store.load();
+      if (mounted) setState(() => _favorites = saved);
     } catch (_) {
-      // Bookmarks remain usable in memory when device storage is unavailable.
+      // Local storage failures must not break live score access.
     }
   }
 
-  Future<void> _loadLeagues() async {
+  Future<void> _refreshHome({bool silent = false}) async {
+    final serial = ++_homeSerial;
+    if (!silent) setState(() { _homeBusy = true; _homeError = false; });
     try {
-      final leagues = await _api.leagues();
-      if (mounted) { setState(() => _leagues = leagues); }
+      final page = await _api.matches(date: DateTime.now());
+      if (!mounted || serial != _homeSerial) return;
+      setState(() { _homeMatches = page.items; _homeError = false; });
     } catch (_) {
-      // The match list remains available even if the league catalog is offline.
+      if (mounted && serial == _homeSerial) setState(() => _homeError = true);
+    } finally {
+      if (mounted && serial == _homeSerial) setState(() => _homeBusy = false);
     }
   }
 
-  Future<void> _loadMatches({bool silent = false, bool append = false}) async {
-    if (_busy && silent) { return; }
-    final requestId = ++_requestId;
-    final page = append ? _page + 1 : 1;
-    final date = _date;
-    _busy = true;
-    if (!silent && mounted) { setState(() { _loading = true; _error = null; }); }
-    try {
-      final result = await _api.matches(date: date, page: page);
-      if (!mounted || requestId != _requestId) { return; }
+  Future<void> _refreshFixture({bool append = false, bool silent = false}) async {
+    if (_fixtureBusy && append) return;
+    final serial = ++_fixtureSerial;
+    final date = _fixtureDate;
+    final league = _leagueId;
+    final liveOnly = _fixtureFilter == 1;
+    final page = append ? _fixturePage + 1 : 1;
+    if (!silent) {
       setState(() {
-        _matches = append ? [..._matches, ...result.items] : result.items;
-        _page = result.currentPage;
-        _lastPage = result.lastPage;
-        _loading = false;
-        _error = null;
+        _fixtureBusy = true;
+        _fixtureError = false;
+        if (!append) {
+          _fixtureMatches = [];
+          _fixturePage = 0;
+        }
+      });
+    }
+    try {
+      final result = await _api.matches(
+        date: date, page: page, leagueId: league, liveOnly: liveOnly,
+      );
+      if (!mounted || serial != _fixtureSerial) return;
+      setState(() {
+        _fixtureMatches = append ? [..._fixtureMatches, ...result.items] : result.items;
+        _fixturePage = result.currentPage;
+        _fixtureLastPage = result.lastPage;
+        _fixtureError = false;
       });
     } catch (_) {
-      if (!mounted || requestId != _requestId) { return; }
-      setState(() { _loading = false; _error = 'network'; });
+      if (mounted && serial == _fixtureSerial) setState(() => _fixtureError = true);
     } finally {
-      _busy = false;
+      if (mounted && serial == _fixtureSerial) setState(() => _fixtureBusy = false);
     }
   }
 
-  void _changeDate(int days) {
-    setState(() {
-      _date = DateTime(_date.year, _date.month, _date.day + days);
-      _matches = [];
-      _page = _lastPage = 1;
-      _error = null;
-    });
-    if (_scrollController.hasClients) { _scrollController.jumpTo(0); }
-    _loadMatches();
+  Future<void> _refreshLeagues() async {
+    try {
+      final rows = await _api.leagues();
+      if (mounted) setState(() { _leagues = rows; _leagueBusy = false; });
+    } catch (_) {
+      if (mounted) setState(() => _leagueBusy = false);
+    }
+  }
+
+  Future<void> _refreshFeatured() async {
+    try {
+      final result = await _api.searchTeams();
+      if (mounted) setState(() { _featured = result.featured; _teamBusy = false; });
+    } catch (_) {
+      if (mounted) setState(() => _teamBusy = false);
+    }
   }
 
   Future<void> _toggleFavorite(int id) async {
-    final previous = Set<int>.from(_favoriteIds);
+    final previous = Set<int>.from(_favorites);
     final next = Set<int>.from(previous);
-    if (!next.add(id)) { next.remove(id); }
-    setState(() => _favoriteIds = next);
-    try { await _favorites.save(next); } catch (_) {
-      if (mounted) { setState(() => _favoriteIds = previous); }
+    if (!next.add(id)) next.remove(id);
+    setState(() => _favorites = next);
+    try {
+      await _store.save(next);
+    } catch (_) {
+      if (mounted) setState(() => _favorites = previous);
     }
+  }
+
+  void _selectTab(int index) {
+    if (index == _tab) return;
+    setState(() => _tab = index);
+  }
+
+  void _selectQuick(int index) {
+    setState(() => _quickTab = index);
+    if (index == 0) return;
+    _fixtureDate = index == 3
+        ? DateTime.now().add(const Duration(days: 1))
+        : DateTime.now();
+    _fixtureFilter = index == 1 ? 1 : index == 4 ? 2 : 0;
+    _selectTab(2);
+    _refreshFixture();
+  }
+
+  void _changeFixtureDate(int shift) {
+    setState(() {
+      _fixtureDate = DateTime(
+        _fixtureDate.year, _fixtureDate.month, _fixtureDate.day + shift,
+      );
+    });
+    _refreshFixture();
+  }
+
+  void _openMatch(FootballMatch match) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => MatchDetailScreen(api: _api, matchId: match.id),
+    ));
+  }
+
+  void _openLeague(LeagueInfo league) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => LeagueDetailScreen(api: _api, league: league),
+    ));
+  }
+
+  void _openSearch() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => TeamSearchScreen(api: _api),
+    ));
+  }
+
+  void _openFeatured(FeaturedTeam entry) {
+    final team = entry.team;
+    if (team == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).teamDataUnavailable)),
+      );
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => TeamMatchesScreen(api: _api, team: team),
+    ));
+  }
+
+  void _openContent(Widget child) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => child));
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _resumed = state == AppLifecycleState.resumed;
-    if (_resumed) { _loadMatches(silent: true); }
+    if (_resumed) {
+      _refreshHome(silent: true);
+      if (_tab == 2) _refreshFixture(silent: true);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _refreshTimer?.cancel();
-    _scrollController.dispose();
+    _timer?.cancel();
     _api.dispose();
     super.dispose();
   }
@@ -130,183 +233,417 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final selected = _matches.where((m) =>
-        (_leagueId == null || m.league.id == _leagueId) &&
-        (_tab != 1 || m.isLive) &&
-        (_tab != 2 || _favoriteIds.contains(m.id))).toList();
-    final groups = <int, List<FootballMatch>>{};
-    for (final match in selected) {
-      groups.putIfAbsent(match.league.id, () => []).add(match);
-    }
-    final leagueById = {for (final match in selected) match.league.id: match.league};
-    final isToday = DateUtils.isSameDay(_date, DateTime.now());
-
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 18,
-        title: Row(children: [
-          const Icon(Icons.sports_soccer, color: TopgolikApp.accent, size: 28),
-          const SizedBox(width: 9),
-          Text(t.appName, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900, letterSpacing: -0.7)),
-        ]),
+        titleSpacing: 14,
+        title: const TopgolikWordmark(),
         actions: [
           IconButton(
             tooltip: t.searchTeams,
+            onPressed: _openSearch,
             icon: const Icon(Icons.search_rounded),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => TeamSearchScreen(api: _api)),
-            ),
           ),
           IconButton(
-            tooltip: t.refresh,
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _busy ? null : () => _loadMatches(),
+            tooltip: t.alerts,
+            onPressed: () => _openContent(const NotificationsScreen()),
+            icon: const Icon(Icons.notifications_none_rounded),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
-      body: RefreshIndicator(
-        color: TopgolikApp.accent,
-        onRefresh: () async { await _loadMatches(); await _loadLeagues(); },
-        child: ListView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-          children: [
-            _dateSelector(t, isToday),
-            const SizedBox(height: 20),
-            Row(children: [
-              Text(t.matches, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
-              const Spacer(),
-              Flexible(child: _leagueSelector(t)),
-            ]),
-            const SizedBox(height: 12),
-            if (_loading && _matches.isEmpty)
-              const Padding(padding: EdgeInsets.symmetric(vertical: 64), child: Center(child: CircularProgressIndicator()))
-            else if (_error != null && _matches.isEmpty)
-              _emptyState(t.connectionError, t.offlineHint, t.retry, () => _loadMatches())
-            else if (selected.isEmpty)
-              _emptyState(t.noMatches, _tab == 2 ? t.favoriteHint : '', t.retry, () => _loadMatches())
-            else
-              ...groups.entries.map((entry) => _leagueBlock(leagueById[entry.key]!, entry.value, t)),
-            if (!_loading && _page < _lastPage)
-              Padding(padding: const EdgeInsets.only(top: 12), child: OutlinedButton(
-                onPressed: _busy ? null : () => _loadMatches(append: true),
-                child: Text(t.seeAll),
-              )),
-            if (_error != null && _matches.isNotEmpty)
-              Padding(padding: const EdgeInsets.only(top: 12), child: Text(t.offlineHint, textAlign: TextAlign.center, style: const TextStyle(color: Colors.amberAccent))),
-          ],
-        ),
-      ),
+      body: switch (_tab) {
+        0 => _dashboard(t),
+        1 => _leagueDirectory(t),
+        2 => _fixtures(t),
+        3 => _teamDirectory(t),
+        _ => _more(t),
+      },
       bottomNavigationBar: NavigationBar(
-        height: 72,
+        height: 70,
         selectedIndex: _tab,
-        onDestinationSelected: (index) => setState(() => _tab = index),
+        onDestinationSelected: _selectTab,
         destinations: [
-          NavigationDestination(icon: const Icon(Icons.sports_soccer_outlined), selectedIcon: const Icon(Icons.sports_soccer), label: t.all),
-          NavigationDestination(icon: const Icon(Icons.sensors_outlined), selectedIcon: const Icon(Icons.sensors), label: t.live),
-          NavigationDestination(icon: const Icon(Icons.star_outline_rounded), selectedIcon: const Icon(Icons.star_rounded), label: t.favorites),
+          NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home_rounded), label: t.home),
+          NavigationDestination(icon: const Icon(Icons.emoji_events_outlined), selectedIcon: const Icon(Icons.emoji_events), label: t.leagues),
+          NavigationDestination(icon: const Icon(Icons.calendar_month_outlined), selectedIcon: const Icon(Icons.calendar_month), label: t.matches),
+          NavigationDestination(icon: const Icon(Icons.groups_outlined), selectedIcon: const Icon(Icons.groups), label: t.teams),
+          NavigationDestination(icon: const Icon(Icons.menu_rounded), label: t.more),
         ],
       ),
     );
   }
 
-  Widget _dateSelector(AppLocalizations t, bool today) => DecoratedBox(
-        decoration: BoxDecoration(color: TopgolikApp.panel, borderRadius: BorderRadius.circular(18)),
-        child: Padding(padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4), child: Row(
-          children: [
-            IconButton(tooltip: t.yesterday, onPressed: () => _changeDate(-1), icon: const Icon(Icons.chevron_left)),
-            Expanded(child: Column(children: [
-              Text(today ? t.today.toUpperCase() : MaterialLocalizations.of(context).formatMediumDate(_date).toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: TopgolikApp.accent, letterSpacing: 1.1)),
-              const SizedBox(height: 3),
-              Text(MaterialLocalizations.of(context).formatMediumDate(_date), style: const TextStyle(fontWeight: FontWeight.w600)),
-            ])),
-            IconButton(tooltip: t.tomorrow, onPressed: () => _changeDate(1), icon: const Icon(Icons.chevron_right)),
-          ],
-        )),
-      );
+  Widget _dashboard(AppLocalizations t) {
+    final now = DateTime.now();
+    final live = _homeMatches.where((match) => match.isLive).toList();
+    final upcoming = _homeMatches.where((match) => !match.isFinished).toList();
+    final highlights = upcoming.isNotEmpty ? upcoming : _homeMatches;
 
-  Widget _leagueSelector(AppLocalizations t) => DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: _leagues.any((l) => l.id == _leagueId) ? _leagueId : null,
-          isDense: true,
-          isExpanded: true,
-          dropdownColor: TopgolikApp.panel,
-          icon: const Icon(Icons.keyboard_arrow_down, color: TopgolikApp.accent),
-          items: [
-            DropdownMenuItem<int?>(value: null, child: Text(t.allLeagues, overflow: TextOverflow.ellipsis)),
-            ..._leagues.map((l) => DropdownMenuItem<int?>(value: l.id, child: Text(l.name, overflow: TextOverflow.ellipsis))),
-          ],
-          onChanged: (id) => setState(() => _leagueId = id),
-        ),
-      );
-
-  Widget _leagueBlock(LeagueInfo league, List<FootballMatch> matches, AppLocalizations t) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: TopgolikApp.panel, borderRadius: BorderRadius.circular(17), border: Border.all(color: const Color(0xFF1D3647))),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(padding: const EdgeInsets.fromLTRB(14, 14, 14, 10), child: Row(children: [
-              const Icon(Icons.emoji_events_outlined, color: TopgolikApp.accent, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text(league.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14))),
-              if (league.country != null) Text(league.country!, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-            ])),
-            const Divider(height: 1, color: Color(0xFF243B49)),
-            ...matches.map((match) => _matchTile(match, t)),
-          ]),
-        ),
-      );
-
-  Widget _matchTile(FootballMatch match, AppLocalizations t) => InkWell(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => MatchDetailScreen(api: _api, matchId: match.id))),
-        child: Padding(padding: const EdgeInsets.fromLTRB(12, 13, 8, 13), child: Row(children: [
-          SizedBox(width: 54, child: Column(children: [
-            if (match.isLive) Container(padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFB82135), borderRadius: BorderRadius.circular(5)), child: Text(t.live.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800)))
-            else Text(match.isFinished ? t.finished : TimeOfDay.fromDateTime(match.startsAt).format(context), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70)),
-            if (match.isLive && (match.statusDetail?.isNotEmpty ?? false)) Padding(padding: const EdgeInsets.only(top: 5), child: Text(match.statusDetail!, style: const TextStyle(fontSize: 10, color: Colors.white60))),
-          ])),
-          const SizedBox(width: 9),
-          Expanded(child: Column(children: [
-            _teamLine(match.home, match.hasScore),
-            const SizedBox(height: 11),
-            _teamLine(match.away, match.hasScore),
-          ])),
-          IconButton(
-            tooltip: t.favorites,
-            icon: Icon(_favoriteIds.contains(match.id) ? Icons.star_rounded : Icons.star_border_rounded, color: _favoriteIds.contains(match.id) ? TopgolikApp.accent : Colors.white54),
-            onPressed: () => _toggleFavorite(match.id),
+    return RefreshIndicator(
+      color: StadiumColors.green,
+      onRefresh: () async {
+        await _refreshHome();
+        await _refreshLeagues();
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 26),
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              for (var i = 0; i < 5; i++) ...[
+                TopgolikPill(
+                  label: [t.all, t.live, t.today, t.tomorrow, t.favorites][i],
+                  selected: _quickTab == i,
+                  onPressed: () => _selectQuick(i),
+                ),
+                const SizedBox(width: 7),
+              ],
+            ]),
           ),
-        ])),
-      );
+          const SizedBox(height: 14),
+          if (_homeBusy && _homeMatches.isEmpty)
+            const Padding(padding: EdgeInsets.symmetric(vertical: 58), child: Center(child: CircularProgressIndicator()))
+          else if (highlights.isNotEmpty)
+            _stadiumHero(highlights.first, t)
+          else
+            _stadiumPlaceholder(t),
+          const SizedBox(height: 20),
+          SectionHeader(
+            title: t.liveMatches,
+            icon: Icons.sensors,
+            actionLabel: t.seeAll,
+            onAction: () {
+              setState(() => _fixtureFilter = 1);
+              _selectTab(2);
+              _refreshFixture();
+            },
+          ),
+          const SizedBox(height: 7),
+          if (_homeError && _homeMatches.isEmpty)
+            EmptyFootballState(title: t.connectionError, onRetry: _refreshHome, retryLabel: t.retry)
+          else if (live.isEmpty)
+            TopgolikPanel(child: EmptyFootballState(title: t.noLiveMatches))
+          else
+            ..._grouped(live).entries.map((group) {
+              final league = group.value.first.league;
+              return LeagueMatchPanel(
+                league: league, matches: group.value,
+                favorites: _favorites, onFavorite: _toggleFavorite,
+                onMatch: _openMatch, onLeague: () => _openLeague(league),
+              );
+            }),
+          const SizedBox(height: 16),
+          SectionHeader(
+            title: t.homeFeatured, icon: Icons.calendar_today_outlined,
+            actionLabel: t.seeAll, onAction: () => _selectTab(2),
+          ),
+          const SizedBox(height: 7),
+          if (_homeMatches.isEmpty)
+            TopgolikPanel(child: EmptyFootballState(title: t.noMatches))
+          else
+            ..._grouped(_homeMatches.take(8).toList()).entries.map((group) {
+              final league = group.value.first.league;
+              return LeagueMatchPanel(
+                league: league, matches: group.value,
+                favorites: _favorites, onFavorite: _toggleFavorite,
+                onMatch: _openMatch, onLeague: () => _openLeague(league),
+              );
+            }),
+          const SizedBox(height: 8),
+          SectionHeader(title: t.news, icon: Icons.newspaper_rounded,
+            actionLabel: t.seeAll, onAction: () => _openContent(const NewsScreen())),
+          TopgolikPanel(child: Text(
+            t.newsUnavailable,
+            style: const TextStyle(fontSize: 13, color: StadiumColors.muted),
+          )),
+          const SizedBox(height: 8),
+          Text(MaterialLocalizations.of(context).formatMediumDate(now),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: StadiumColors.muted, fontSize: 11)),
+        ],
+      ),
+    );
+  }
 
-  Widget _teamLine(TeamInfo team, bool showScore) => Row(children: [
-        _teamEmblem(team),
-        const SizedBox(width: 8),
-        Expanded(child: Text(team.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
-        SizedBox(width: 25, child: Text(showScore ? '${team.score ?? ''}' : '–', textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
-      ]);
+  Widget _stadiumPlaceholder(AppLocalizations t) => Container(
+    height: 175,
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFF092C48), StadiumColors.surface, Color(0xFF06291B)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(19),
+      border: Border.all(color: StadiumColors.border),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Icon(Icons.stadium_outlined, color: StadiumColors.green, size: 42),
+        Text(t.featuredMatch, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22)),
+        Text(t.noMatches, style: const TextStyle(color: StadiumColors.muted)),
+      ],
+    ),
+  );
 
-  Widget _teamEmblem(TeamInfo team) => SizedBox(
-        height: 23, width: 23,
-        child: team.logoUrl != null && Uri.tryParse(team.logoUrl!)?.scheme == 'https'
-            ? Image.network(team.logoUrl!, fit: BoxFit.contain, errorBuilder: (_, _, _) => const Icon(Icons.shield_outlined, size: 20, color: Colors.white54))
-            : const Icon(Icons.shield_outlined, size: 20, color: Colors.white54),
-      );
-
-  Widget _emptyState(String title, String subtitle, String retry, VoidCallback onRetry) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 66, horizontal: 16),
-        child: Column(children: [
-          const Icon(Icons.sports_soccer_outlined, size: 45, color: Colors.white38),
-          const SizedBox(height: 12),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 8), Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54)),
-          ],
-          const SizedBox(height: 18), OutlinedButton(onPressed: onRetry, child: Text(retry)),
+  Widget _stadiumHero(FootballMatch match, AppLocalizations t) => Material(
+    borderRadius: BorderRadius.circular(19),
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(19),
+      onTap: () => _openMatch(match),
+      child: Ink(
+        height: 209,
+        padding: const EdgeInsets.all(17),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: StadiumColors.border),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF063D34), Color(0xFF092D4A), Color(0xFF030C13)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.stadium, color: StadiumColors.green, size: 26),
+            const SizedBox(width: 7),
+            Expanded(child: Text(match.league.name, maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 12))),
+            if (match.isLive)
+              const Icon(Icons.sensors, color: StadiumColors.red),
+          ]),
+          const Spacer(),
+          Text(t.featuredMatch.toUpperCase(),
+            style: const TextStyle(color: StadiumColors.green, letterSpacing: 1.4, fontWeight: FontWeight.w800, fontSize: 11)),
+          const SizedBox(height: 7),
+          Row(children: [
+            TeamCrest(url: match.home.logoUrl, size: 34),
+            const SizedBox(width: 8),
+            Expanded(child: Text(match.home.name, maxLines: 2,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
+            Text(match.hasScore ? '@@{match.home.score} : @@{match.away.score}' : '– : –',
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            const SizedBox(width: 10),
+            Expanded(child: Text(match.away.name, maxLines: 2, textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
+            const SizedBox(width: 8),
+            TeamCrest(url: match.away.logoUrl, size: 34),
+          ]),
+          const SizedBox(height: 10),
+          Text(
+            match.isFinished ? t.finished : match.isLive ? t.live : TimeOfDay.fromDateTime(match.startsAt).format(context),
+            style: const TextStyle(color: StadiumColors.muted, fontSize: 12),
+          ),
         ]),
-      );
+      ),
+    ),
+  );
+
+  Map<int, List<FootballMatch>> _grouped(List<FootballMatch> matches) {
+    final groups = <int, List<FootballMatch>>{};
+    for (final match in matches) {
+      groups.putIfAbsent(match.league.id, () => []).add(match);
+    }
+    return groups;
+  }
+
+  Widget _leagueDirectory(AppLocalizations t) => RefreshIndicator(
+    onRefresh: _refreshLeagues,
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 13, 16, 24),
+      children: [
+        SectionHeader(title: t.countries, icon: Icons.emoji_events_outlined),
+        const SizedBox(height: 12),
+        if (_leagueBusy)
+          const Padding(padding: EdgeInsets.all(60), child: Center(child: CircularProgressIndicator()))
+        else if (_leagues.isEmpty)
+          EmptyFootballState(title: t.noLeagues, onRetry: _refreshLeagues, retryLabel: t.retry)
+        else
+          for (final league in _leagues)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: TopgolikPanel(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  leading: const Icon(Icons.emoji_events_outlined, color: StadiumColors.green),
+                  title: Text(league.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle: league.country == null ? null
+                      : Text(league.country!, style: const TextStyle(color: StadiumColors.muted)),
+                  trailing: const Icon(Icons.chevron_right, color: StadiumColors.muted),
+                  onTap: () => _openLeague(league),
+                ),
+              ),
+            ),
+      ],
+    ),
+  );
+
+  Widget _fixtures(AppLocalizations t) {
+    final visible = _fixtureFilter == 2
+        ? _fixtureMatches.where((match) => _favorites.contains(match.id)).toList()
+        : _fixtureMatches;
+    return RefreshIndicator(
+      onRefresh: () => _refreshFixture(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 28),
+        children: [
+          TopgolikPanel(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            child: Row(children: [
+              IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _changeFixtureDate(-1)),
+              Expanded(child: Column(children: [
+                Text(t.fixtures.toUpperCase(), style: const TextStyle(color: StadiumColors.green, fontWeight: FontWeight.w800, fontSize: 11)),
+                Text(MaterialLocalizations.of(context).formatMediumDate(_fixtureDate),
+                    textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800)),
+              ])),
+              IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _changeFixtureDate(1)),
+            ]),
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              TopgolikPill(label: t.all, selected: _fixtureFilter == 0,
+                onPressed: () { setState(() => _fixtureFilter = 0); _refreshFixture(); }),
+              const SizedBox(width: 8),
+              TopgolikPill(label: t.live, selected: _fixtureFilter == 1,
+                onPressed: () { setState(() => _fixtureFilter = 1); _refreshFixture(); }),
+              const SizedBox(width: 8),
+              TopgolikPill(label: t.favorites, selected: _fixtureFilter == 2,
+                onPressed: () { setState(() => _fixtureFilter = 2); _refreshFixture(); }),
+            ]),
+          ),
+          const SizedBox(height: 13),
+          DropdownButtonFormField<int>(
+            initialValue: _leagues.any((league) => league.id == _leagueId) ? _leagueId : null,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: t.chooseLeague,
+              filled: true,
+              fillColor: StadiumColors.surface,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
+              isDense: true,
+            ),
+            items: [
+              DropdownMenuItem<int>(value: -1, child: Text(t.allLeagues)),
+              for (final league in _leagues)
+                DropdownMenuItem<int>(value: league.id,
+                  child: Text(league.name, overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (id) {
+              setState(() => _leagueId = id == -1 ? null : id);
+              _refreshFixture();
+            },
+          ),
+          const SizedBox(height: 16),
+          SectionHeader(title: t.allMatches, icon: Icons.calendar_month_outlined),
+          const SizedBox(height: 8),
+          if (_fixtureBusy && _fixtureMatches.isEmpty)
+            const Padding(padding: EdgeInsets.all(50), child: Center(child: CircularProgressIndicator()))
+          else if (_fixtureError && _fixtureMatches.isEmpty)
+            EmptyFootballState(title: t.connectionError, onRetry: _refreshFixture, retryLabel: t.retry)
+          else if (visible.isEmpty)
+            EmptyFootballState(
+              title: t.noMatches,
+              details: _fixtureFilter == 2 ? t.favoritesToday : null,
+            )
+          else
+            ..._grouped(visible).entries.map((entry) {
+              final league = entry.value.first.league;
+              return LeagueMatchPanel(
+                league: league, matches: entry.value,
+                favorites: _favorites, onFavorite: _toggleFavorite,
+                onMatch: _openMatch, onLeague: () => _openLeague(league),
+              );
+            }),
+          if (_fixturePage < _fixtureLastPage)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OutlinedButton(
+                onPressed: _fixtureBusy ? null : () => _refreshFixture(append: true),
+                child: Text(t.seeAll),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _teamDirectory(AppLocalizations t) => RefreshIndicator(
+    onRefresh: _refreshFeatured,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 26),
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        TopgolikPanel(
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            leading: const Icon(Icons.search, color: StadiumColors.green),
+            title: Text(t.searchHint, style: const TextStyle(color: StadiumColors.muted)),
+            trailing: const Icon(Icons.arrow_forward_ios, color: StadiumColors.muted, size: 15),
+            onTap: _openSearch,
+          ),
+        ),
+        const SizedBox(height: 18),
+        SectionHeader(title: t.recommendedTeams, icon: Icons.star_outline),
+        const SizedBox(height: 10),
+        if (_teamBusy)
+          const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator()))
+        else if (_featured.isEmpty)
+          EmptyFootballState(title: t.connectionError, onRetry: _refreshFeatured, retryLabel: t.retry)
+        else
+          for (final entry in _featured)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TopgolikPanel(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  leading: TeamCrest(url: entry.team?.logoUrl, size: 34),
+                  title: Text(entry.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  trailing: Icon(entry.team == null ? Icons.info_outline : Icons.chevron_right,
+                      color: entry.team == null ? StadiumColors.muted : StadiumColors.green),
+                  onTap: () => _openFeatured(entry),
+                ),
+              ),
+            ),
+      ],
+    ),
+  );
+
+  Widget _more(AppLocalizations t) {
+    final options = <(IconData, String, Widget)>[
+      (Icons.newspaper_rounded, t.news, const NewsScreen()),
+      (Icons.notifications_none_rounded, t.alerts, const NotificationsScreen()),
+      (Icons.settings_outlined, t.settings, const AppSettingsScreen()),
+    ];
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        const Center(child: TopgolikWordmark(size: 30)),
+        const SizedBox(height: 22),
+        for (final item in options)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: TopgolikPanel(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(item.$1, color: StadiumColors.green),
+                title: Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w700)),
+                trailing: const Icon(Icons.chevron_right, color: StadiumColors.muted),
+                onTap: () => _openContent(item.$3),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Text(t.about, style: const TextStyle(color: StadiumColors.muted), textAlign: TextAlign.center),
+        const Text('topgolik.com', style: TextStyle(color: StadiumColors.green), textAlign: TextAlign.center),
+      ],
+    );
+  }
 }

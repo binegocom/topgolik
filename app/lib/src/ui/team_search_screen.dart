@@ -6,7 +6,8 @@ import '../../l10n/app_localizations.dart';
 import '../data/api_client.dart';
 import '../models/team_search.dart';
 import 'team_matches_screen.dart';
-import 'topgolik_app.dart';
+import 'design/topgolik_ui.dart';
+
 
 class TeamSearchScreen extends StatefulWidget {
   const TeamSearchScreen({super.key, required this.api});
@@ -101,7 +102,7 @@ class _TeamSearchScreenState extends State<TeamSearchScreen> {
             hintText: t.searchHint,
             counterText: '',
             border: InputBorder.none,
-            prefixIcon: const Icon(Icons.search, color: TopgolikApp.accent),
+            prefixIcon: const Icon(Icons.search, color: StadiumColors.green),
             suffixIcon: featured
                 ? null
                 : IconButton(
@@ -163,29 +164,19 @@ class _TeamSearchScreenState extends State<TeamSearchScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
       child: Material(
-        color: TopgolikApp.panel,
+        color: StadiumColors.surface,
         borderRadius: BorderRadius.circular(14),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           onTap: () => _onTeamSelected(team),
-          leading: SizedBox(
-            width: 38,
-            height: 38,
-            child: hasLogo
-                ? Image.network(
-                    logo,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(Icons.shield_outlined),
-                  )
-                : const Icon(Icons.shield_outlined, color: Colors.white54),
-          ),
+          leading: TeamCrest(url: hasLogo ? logo : null, size: 38),
           title: Text(
             label,
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
           trailing: Icon(
             team != null ? Icons.chevron_right_rounded : Icons.info_outline,
-            color: team != null ? TopgolikApp.accent : Colors.white38,
+            color: team != null ? StadiumColors.green : Colors.white38,
           ),
         ),
       ),
