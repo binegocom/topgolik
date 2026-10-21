@@ -13,6 +13,7 @@ import 'league_detail_screen.dart';
 import 'match_detail_screen.dart';
 import 'team_matches_screen.dart';
 import 'team_search_screen.dart';
+import 'premier_league_players_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -618,6 +619,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _more(AppLocalizations t) {
     final options = <(IconData, String, Widget)>[
+      (Icons.person_search_outlined, t.playerStats, PremierLeaguePlayersScreen(api: _api)),
       (Icons.newspaper_rounded, t.news, const NewsScreen()),
       (Icons.notifications_none_rounded, t.alerts, const NotificationsScreen()),
       (Icons.settings_outlined, t.settings, const AppSettingsScreen()),

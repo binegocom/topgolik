@@ -83,5 +83,14 @@
   "standingsSeasonStart": "Début de saison",
   "standingsJuly": "Juillet",
   "standingsJanuary": "Janvier",
-  "standingsCounted": "Matchs pris en compte"
+  "standingsCounted": "Matchs pris en compte",
+  "playerStats": "Statistiques des joueurs",
+  "premierLeagueOnly": "Premier League – Joueurs",
+  "playerSearchHint": "Rechercher un joueur ou un club",
+  "playerStatsNote": "Données disponibles provenant de Fantasy Premier League uniquement; les autres compétitions ne sont pas couvertes.",
+  "playerStatsUnavailable": "Aucune donnée de joueur disponible.",
+  "playerGoals": "Buts",
+  "playerAssists": "Passes",
+  "playerMinutes": "Minutes",
+  "playerExpectedGoals": "xG"
 }
