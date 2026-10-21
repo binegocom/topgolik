@@ -45,3 +45,7 @@ No sample fixture, article, player, result, standings position, transfer or noti
 5. Complete iOS simulator/device and store-ready release validation.
 
 A successful debug APK in CI is not the same as a production-certified app.
+
+## Premier League player statistics
+
+`More > Player statistics` now queries the existing Laravel read-only Fantasy Premier League endpoint. The screen supports searching players/clubs and displays actual source-provided goals, assists, minutes and xG. Null statistics remain unavailable rather than being guessed. This feed is expressly limited to the English Premier League, and the upstream's redistribution rights and live uptime still require release approval.

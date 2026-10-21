@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/football_match.dart';
 import '../models/team_search.dart';
 import '../models/league_standings.dart';
+import '../models/premier_league_player.dart';
 
 class MatchPage {
   const MatchPage({required this.items, required this.currentPage, required this.lastPage});
@@ -102,6 +103,15 @@ class TopgolikApi {
       'season_start_month': seasonStartMonth.toString(),
     });
     return LeagueStandings.fromJson(data);
+  }
+
+  Future<PlayerSearchResponse> premierLeaguePlayers({String query = ''}) async {
+    final term = query.trim();
+    final data = await _get('/players/premier-league', {
+      'limit': '50',
+      if (term.isNotEmpty) 'q': term,
+    });
+    return PlayerSearchResponse.fromJson(data);
   }
 
   void dispose() => _client.close();
