@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 final class LeagueStandingsController extends Controller
 {
@@ -29,6 +30,7 @@ final class LeagueStandingsController extends Controller
         // A hard ceiling avoids unbounded queries if a provider sends malformed data.
         $matches = FootballMatch::query()
             ->where('league_id', $league->id)
+            ->whereNotIn('id', DB::table('match_aliases')->select('alias_match_id'))
             ->where('status', 'finished')
             ->whereNotNull('home_score')
             ->whereNotNull('away_score')

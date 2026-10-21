@@ -29,6 +29,7 @@ final class MatchController extends Controller
             ->join('leagues', 'football_matches.league_id', '=', 'leagues.id')
             ->select('football_matches.*')
             ->with(['league', 'homeTeam', 'awayTeam'])
+            ->whereNotIn('football_matches.id', DB::table('match_aliases')->select('alias_match_id'))
             ->where('football_matches.starts_at', '>=', $start)
             ->where('football_matches.starts_at', '<', $start->addDay());
         if (isset($input['league'])) { $query->where('football_matches.league_id', $input['league']); }
@@ -63,6 +64,7 @@ final class MatchController extends Controller
     {
         $page = FootballMatch::query()
             ->with(['league', 'homeTeam', 'awayTeam'])
+            ->whereNotIn('football_matches.id', DB::table('match_aliases')->select('alias_match_id'))
             ->where(function ($query) use ($team): void {
                 $query->where('home_team_id', $team->id)
                     ->orWhere('away_team_id', $team->id);

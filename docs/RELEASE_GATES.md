@@ -62,3 +62,7 @@ php artisan matches:check-providers --max-age-minutes=45
 ```
 
 Failure logs alone are **not** a delivered push/email alert: connect the configured log output to an operator notification system and validate delivery before production. The check detects sync freshness, not the provider's real-time match completeness. ESPN polling is every five minutes to reduce unnecessary unauthenticated calls; hourly tomorrow sync remains unchanged. DB migrations are additive; no live row deletions are executed.
+
+## Explicit cross-provider duplicate suppression
+
+Database match IDs always retain their source identity. The additive `match_aliases` table stores operator-approved source-to-canonical references. `matches:link-verified CANONICAL_ID DUPLICATE_ID` verifies matching league countries, exactly matching normalized team names, kickoff times (30-minute tolerance) and non-conflicting completed scores. The command **does not write** without `--confirm`. No fuzzy or speculative automatic merging is permitted. Once explicitly linked, duplicate aliases are suppressed from match list, team match list and calculated league standings; existing detail URLs remain readable for audit. Never edit or delete source matches as part of aliasing. New upstream identities and corrected kickoff times must be reviewed again before linking. Synonyms and different spelling require independent verified team mapping in a future revision.
