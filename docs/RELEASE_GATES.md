@@ -47,3 +47,7 @@ FPL's no-key public `bootstrap-static/` JSON is exposed through `GET /api/v1/pla
 ## Computed provisional league tables
 
 `GET /api/v1/leagues/{league}/standings?season=2026&season_start_month=7` derives played, won, drawn, lost, goals, goal difference, and three-points-per-win standings from actual ingested **finished** results. The response always includes `official:false`, `complete:false`, and `matches_counted`. It is **not** a federation table: head-to-head rules, point deductions, postponed games and incomplete coverage are not inferred. The client clearly labels these as provisional. Season start is explicitly selectable (January or July), with July default; the correct boundary varies by competition. Query size is capped without destructive operations. It does not invent fixtures or players.
+
+## Stored-data coverage snapshot
+
+`GET /api/v1/coverage` reports actual ingested league/source counts (scheduled, live, finished), last match sync and last league ingest. Results are bounded to 500 leagues and cached for 60 seconds. The endpoint explicitly reports stored data only, **not** upstream coverage, freshness SLA or licensing status. No API keys, private identifiers or fake matches are returned. Operational alerting, provider probe jobs and dashboard authentication remain release gates tracked in GitHub Issue #16.
