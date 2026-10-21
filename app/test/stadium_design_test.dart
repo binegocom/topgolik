@@ -45,6 +45,26 @@ void main() {
     expect(selected, isTrue);
   });
 
+  testWidgets('a ListTile inside TopgolikPanel has visible Material ink and no assertion', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: TopgolikPanel(
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            title: const Text('Find a team'),
+            onTap: () => tapped = true,
+          ),
+        ),
+      ),
+    ));
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Find a team'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(tapped, isTrue);
+  });
+
   testWidgets('empty state does not invent matches when source data is absent', (tester) async {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(
