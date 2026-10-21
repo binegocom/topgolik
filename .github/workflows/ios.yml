@@ -30,3 +30,12 @@ jobs:
           flutter test
       - name: Build unsigned iOS simulator app
         run: flutter build ios --simulator --no-codesign --debug --dart-define=TOPGOLIK_API_URL=https://api.topgolik.com/api/v1
+      - name: Package unsigned simulator app
+        run: tar -C build/ios/iphonesimulator -czf topgolik-ios-simulator.tar.gz Runner.app
+      - name: Save iOS simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: topgolik-ios-simulator
+          path: app/topgolik-ios-simulator.tar.gz
+          if-no-files-found: error
+          retention-days: 7
