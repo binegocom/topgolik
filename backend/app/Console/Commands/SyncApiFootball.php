@@ -17,6 +17,7 @@ final class SyncApiFootball extends Command
         {--country= : Country to discover, default configured country}
         {--season= : Season start year, default current UTC football season}
         {--max-leagues=10 : Maximum verified competitions to import, from 1 to 12}
+        {--list-only : Discover and list all available source-verified leagues without importing teams or fixtures}
         {--league= : Restrict import to one source-verified league ID}
         {--fixtures : Include real match fixtures for the specified day}
         {--date=today : Date for fixtures: today, tomorrow or YYYY-MM-DD}';
@@ -113,6 +114,13 @@ final class SyncApiFootball extends Command
         });
 
         $total = count($leagues);
+        if ($this->option('list-only')) {
+            $this->info("{$total} verified competitions for {$country} ({$season}):");
+            foreach ($leagues as $league) {
+                $this->line("{$league['league_id']} | {$league['name']}");
+            }
+            return $total > 0 ? self::SUCCESS : self::FAILURE;
+        }
         $selected = array_slice($leagues, 0, $limit);
         $this->info("{$total} verified leagues found; importing ".count($selected)." (daily free budget limited).");
         if ($total > $limit) {
