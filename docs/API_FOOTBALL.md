@@ -30,9 +30,15 @@ Terms and image rights: https://www.api-football.com/terms
     docker compose -f compose.simulator.yaml exec api php artisan migrate --force
     docker compose -f compose.simulator.yaml exec api php artisan config:clear
 
-4. Discover actual available Turkey leagues for the selected season and import up to 10 club catalogs:
+4. Discover **all actual league IDs** for Turkey using one source call, without fetching any team catalogs:
+
+    docker compose -f compose.simulator.yaml exec api php artisan api-football:sync --country=Turkey --season=2026 --list-only
+
+   Then import verified club catalogs in bounded batches (maximum 12 per run, subject to the free daily quota):
 
     docker compose -f compose.simulator.yaml exec api php artisan api-football:sync --country=Turkey --season=2026 --max-leagues=10
+
+   Use `--league=ID` with an ID from the list to import any verified competition omitted by the prioritized batch. The free quota does not support importing every global league each day.
 
 5. To import fixtures for one **discovered** numeric league ID:
 
