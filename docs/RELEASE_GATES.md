@@ -16,3 +16,7 @@ This repository is NOT production-ready until the following are verified.
 ## Data principles
 
 Never fabricate an event, score, club, logo, lineup or status in the running application. All match data has traceable provider keys and ingestion timestamps. External payloads must be validated, allow-listed and stored using stable identifiers. A source failure never clears successful data; stale results remain explicitly timestamped.
+
+## Additional free data providers
+
+OpenLigaDB (no key, user-contributed match results) is polled for configured leagues at most every ten minutes and keeps provider-scoped team/match IDs. Non-finished fixtures must not be shown as live unless a reliable upstream in-play marker becomes available. Results are read only from finished match records and the correct result type. Do not configure competitions already imported by ESPN without an explicit canonical deduplication strategy.

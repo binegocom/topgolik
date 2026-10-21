@@ -12,6 +12,10 @@ return [
         ['label' => 'Fenerbahçe', 'aliases' => ['Fenerbahçe', 'Fenerbahce', 'Fenerbahçe SK']],
         ['label' => 'Beşiktaş', 'aliases' => ['Beşiktaş', 'Besiktas', 'Beşiktaş JK']],
     ],
+    'openligadb' => [
+        // No overlapping 'bl1' by default: ESPN already imports Germany first division.
+        'leagues' => array_values(array_filter(array_map('trim', explode(',', (string) env('TOPGOLIK_OPENLIGA_LEAGUES', 'bl2,bl3'))))),
+    ],
     'espn' => [
         'base_url' => 'https://site.api.espn.com/apis/site/v2/sports/soccer',
         'leagues' => array_values(array_filter(array_map('trim', explode(',', (string) env('TOPGOLIK_ESPN_LEAGUES', ''))))),
