@@ -259,7 +259,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         3 => _teamDirectory(t),
         _ => _more(t),
       },
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: StadiumColors.border)),
+        ),
+        child: NavigationBar(
         height: 70,
         selectedIndex: _tab,
         onDestinationSelected: _selectTab,
@@ -270,6 +274,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           NavigationDestination(icon: const Icon(Icons.groups_outlined), selectedIcon: const Icon(Icons.groups), label: t.teams),
           NavigationDestination(icon: const Icon(Icons.menu_rounded), label: t.more),
         ],
+        ),
       ),
     );
   }
@@ -281,15 +286,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final highlights = upcoming.isNotEmpty ? upcoming : _homeMatches;
 
     return RefreshIndicator(
-      color: StadiumColors.green,
+      color: StadiumColors.blue,
       onRefresh: () async {
         await _refreshHome();
         await _refreshLeagues();
       },
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(14, 6, 14, 26),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 28),
         children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.today.toUpperCase(),
+                    style: const TextStyle(
+                      color: StadiumColors.blue, fontSize: 11,
+                      fontWeight: FontWeight.w900, letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    MaterialLocalizations.of(context).formatMediumDate(now),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              )),
+              Material(
+                color: StadiumColors.raised,
+                borderRadius: BorderRadius.circular(12),
+                child: IconButton(
+                  tooltip: t.fixtures,
+                  onPressed: () => _selectTab(2),
+                  icon: const Icon(Icons.calendar_month_outlined, color: StadiumColors.blue),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(children: [
@@ -303,17 +340,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ],
             ]),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 15),
           if (_homeBusy && _homeMatches.isEmpty)
-            const Padding(padding: EdgeInsets.symmetric(vertical: 58), child: Center(child: CircularProgressIndicator()))
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 44),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_homeError && _homeMatches.isEmpty)
+            EmptyFootballState(
+              title: t.connectionError, onRetry: _refreshHome, retryLabel: t.retry,
+            )
           else if (highlights.isNotEmpty)
             _stadiumHero(highlights.first, t)
           else
             _stadiumPlaceholder(t),
-          const SizedBox(height: 20),
+          const SizedBox(height: 19),
           SectionHeader(
             title: t.liveMatches,
-            icon: Icons.sensors,
+            icon: Icons.sensors_rounded,
             actionLabel: t.seeAll,
             onAction: () {
               setState(() => _fixtureFilter = 1);
@@ -321,11 +365,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               _refreshFixture();
             },
           ),
-          const SizedBox(height: 7),
-          if (_homeError && _homeMatches.isEmpty)
-            EmptyFootballState(title: t.connectionError, onRetry: _refreshHome, retryLabel: t.retry)
-          else if (live.isEmpty)
-            TopgolikPanel(child: EmptyFootballState(title: t.noLiveMatches))
+          const SizedBox(height: 9),
+          if (live.isEmpty)
+            TopgolikPanel(
+              child: EmptyFootballState(title: t.noLiveMatches),
+            )
           else
             ..._grouped(live).entries.map((group) {
               final league = group.value.first.league;
@@ -335,16 +379,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onMatch: _openMatch, onLeague: () => _openLeague(league),
               );
             }),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SectionHeader(
-            title: t.homeFeatured, icon: Icons.calendar_today_outlined,
-            actionLabel: t.seeAll, onAction: () => _selectTab(2),
+            title: t.allMatches,
+            icon: Icons.calendar_today_outlined,
+            actionLabel: t.seeAll,
+            onAction: () => _selectTab(2),
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 9),
           if (_homeMatches.isEmpty)
             TopgolikPanel(child: EmptyFootballState(title: t.noMatches))
           else
-            ..._grouped(_homeMatches.take(8).toList()).entries.map((group) {
+            ..._grouped(_homeMatches.take(12).toList()).entries.map((group) {
               final league = group.value.first.league;
               return LeagueMatchPanel(
                 league: league, matches: group.value,
@@ -352,96 +398,140 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onMatch: _openMatch, onLeague: () => _openLeague(league),
               );
             }),
-          const SizedBox(height: 8),
-          SectionHeader(title: t.news, icon: Icons.newspaper_rounded,
-            actionLabel: t.seeAll, onAction: () => _openContent(const NewsScreen())),
-          TopgolikPanel(child: Text(
-            t.newsUnavailable,
-            style: const TextStyle(fontSize: 13, color: StadiumColors.muted),
-          )),
-          const SizedBox(height: 8),
-          Text(MaterialLocalizations.of(context).formatMediumDate(now),
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: StadiumColors.muted, fontSize: 11)),
         ],
       ),
     );
   }
 
-  Widget _stadiumPlaceholder(AppLocalizations t) => Container(
-    height: 175,
-    padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF092C48), StadiumColors.surface, Color(0xFF06291B)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight,
+  Widget _stadiumPlaceholder(AppLocalizations t) => TopgolikPanel(
+    child: SizedBox(
+      height: 115,
+      child: Row(
+        children: [
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              color: StadiumColors.raised,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.sports_soccer, color: StadiumColors.blue, size: 27),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(t.featuredMatch, style: const TextStyle(
+                  fontWeight: FontWeight.w900, fontSize: 16,
+                )),
+                const SizedBox(height: 4),
+                Text(t.noMatches, style: const TextStyle(
+                  color: StadiumColors.muted, fontSize: 12,
+                )),
+              ],
+            ),
+          ),
+        ],
       ),
-      borderRadius: BorderRadius.circular(19),
-      border: Border.all(color: StadiumColors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Icon(Icons.stadium_outlined, color: StadiumColors.green, size: 42),
-        Text(t.featuredMatch, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22)),
-        Text(t.noMatches, style: const TextStyle(color: StadiumColors.muted)),
-      ],
     ),
   );
 
   Widget _stadiumHero(FootballMatch match, AppLocalizations t) => Material(
-    borderRadius: BorderRadius.circular(19),
     color: Colors.transparent,
+    borderRadius: BorderRadius.circular(18),
     child: InkWell(
-      borderRadius: BorderRadius.circular(19),
+      borderRadius: BorderRadius.circular(18),
       onTap: () => _openMatch(match),
       child: Ink(
-        height: 209,
-        padding: const EdgeInsets.all(17),
+        padding: const EdgeInsets.fromLTRB(16, 13, 16, 15),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(19),
-          border: Border.all(color: StadiumColors.border),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF31588B)),
           gradient: const LinearGradient(
-            colors: [Color(0xFF063D34), Color(0xFF092D4A), Color(0xFF030C13)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF19395D), Color(0xFF101F36), Color(0xFF0B182B)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const Icon(Icons.stadium, color: StadiumColors.green, size: 26),
-            const SizedBox(width: 7),
-            Expanded(child: Text(match.league.name, maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 12))),
-            if (match.isLive)
-              const Icon(Icons.sensors, color: StadiumColors.red),
-          ]),
-          const Spacer(),
-          Text(t.featuredMatch.toUpperCase(),
-            style: const TextStyle(color: StadiumColors.green, letterSpacing: 1.4, fontWeight: FontWeight.w800, fontSize: 11)),
-          const SizedBox(height: 7),
-          Row(children: [
-            TeamCrest(url: match.home.logoUrl, size: 34),
-            const SizedBox(width: 8),
-            Expanded(child: Text(match.home.name, maxLines: 2,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
-            Text(match.hasScore ? '${match.home.score} : ${match.away.score}' : '– : –',
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-            const SizedBox(width: 10),
-            Expanded(child: Text(match.away.name, maxLines: 2, textAlign: TextAlign.end,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
-            const SizedBox(width: 8),
-            TeamCrest(url: match.away.logoUrl, size: 34),
-          ]),
-          const SizedBox(height: 10),
-          Text(
-            match.isFinished ? t.finished : match.isLive ? t.live : TimeOfDay.fromDateTime(match.startsAt).format(context),
-            style: const TextStyle(color: StadiumColors.muted, fontSize: 12),
-          ),
-        ]),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined, size: 16, color: StadiumColors.blue),
+                const SizedBox(width: 7),
+                Expanded(child: Text(
+                  match.league.name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white70, fontWeight: FontWeight.w700, fontSize: 12,
+                  ),
+                )),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: match.isLive
+                        ? const Color(0x33FF6479) : const Color(0x304F8DF3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    match.isLive ? t.live
+                        : match.isFinished ? t.finished : t.scheduled,
+                    style: TextStyle(
+                      color: match.isLive ? StadiumColors.red : StadiumColors.blue,
+                      fontSize: 10, fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _featuredTeam(match.home)),
+                SizedBox(
+                  width: 84,
+                  child: Column(children: [
+                    Text(
+                      match.hasScore
+                          ? '${match.home.score} : ${match.away.score}' : '– : –',
+                      style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      TimeOfDay.fromDateTime(match.startsAt).format(context),
+                      style: const TextStyle(
+                        fontSize: 11, color: StadiumColors.muted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ]),
+                ),
+                Expanded(child: _featuredTeam(match.away)),
+              ],
+            ),
+          ],
+        ),
       ),
     ),
+  );
+
+  Widget _featuredTeam(TeamInfo team) => Column(
+    children: [
+      TeamCrest(url: team.logoUrl, size: 41),
+      const SizedBox(height: 7),
+      Text(
+        team.name,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+      ),
+    ],
   );
 
   Map<int, List<FootballMatch>> _grouped(List<FootballMatch> matches) {
@@ -484,6 +574,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ),
   );
 
+  Widget _fixtureDateStrip(AppLocalizations t) {
+    final today = DateTime.now();
+    final material = MaterialLocalizations.of(context);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var offset = -2; offset <= 2; offset++) ...[
+            Builder(builder: (context) {
+              final day = DateTime(
+                _fixtureDate.year, _fixtureDate.month, _fixtureDate.day + offset,
+              );
+              final label = DateUtils.isSameDay(day, today)
+                  ? t.today
+                  : DateUtils.isSameDay(day, today.subtract(const Duration(days: 1)))
+                      ? t.yesterday
+                      : DateUtils.isSameDay(day, today.add(const Duration(days: 1)))
+                          ? t.tomorrow
+                          : material.formatShortDate(day);
+              return TopgolikPill(
+                label: label,
+                selected: offset == 0,
+                onPressed: () {
+                  if (offset != 0) _changeFixtureDate(offset);
+                },
+              );
+            }),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _fixtures(AppLocalizations t) {
     final visible = _fixtureFilter == 2
         ? _fixtureMatches.where((match) => _favorites.contains(match.id)).toList()
@@ -507,6 +631,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ]),
           ),
           const SizedBox(height: 14),
+          _fixtureDateStrip(t),
+          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(children: [
