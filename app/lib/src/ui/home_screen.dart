@@ -426,7 +426,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             const SizedBox(width: 8),
             Expanded(child: Text(match.home.name, maxLines: 2,
               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
-            Text(match.hasScore ? '@@{match.home.score} : @@{match.away.score}' : '– : –',
+            Text(match.hasScore ? '${match.home.score} : ${match.away.score}' : '– : –',
               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
             const SizedBox(width: 10),
             Expanded(child: Text(match.away.name, maxLines: 2, textAlign: TextAlign.end,

@@ -45,14 +45,14 @@ class TopgolikPanel extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: StadiumColors.surface,
+  Widget build(BuildContext context) => Material(
+    color: StadiumColors.surface,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: StadiumColors.border),
+      side: const BorderSide(color: StadiumColors.border),
     ),
-    child: child,
+    child: Padding(padding: padding, child: child),
   );
 }
 
