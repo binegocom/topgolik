@@ -72,7 +72,17 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 26),
             children: [
-              TopgolikPanel(
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFF31588B)),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF19395D), Color(0xFF101F36), Color(0xFF0B182B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
                 child: Column(children: [
                   Text(match.league.name,
                     textAlign: TextAlign.center,
@@ -85,7 +95,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                   const SizedBox(height: 22),
                   Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                     Expanded(child: Column(children: [
-                      TeamCrest(url: match.home.logoUrl, size: 48),
+                      TeamCrest(url: match.home.logoUrl, size: 54),
                       const SizedBox(height: 9),
                       Text(match.home.name, maxLines: 2, textAlign: TextAlign.center,
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
@@ -95,13 +105,13 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                         match.hasScore
                             ? '${match.home.score} : ${match.away.score}'
                             : '– : –',
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 30),
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 32, letterSpacing: -1),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         match.isLive ? t.live : match.isFinished ? t.finished : t.scheduled,
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-                          color: match.isLive ? StadiumColors.red : StadiumColors.green),
+                          color: match.isLive ? StadiumColors.red : StadiumColors.blue),
                       ),
                       if (match.statusDetail?.isNotEmpty == true) ...[
                         const SizedBox(height: 4),
@@ -109,7 +119,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                       ],
                     ]),
                     Expanded(child: Column(children: [
-                      TeamCrest(url: match.away.logoUrl, size: 48),
+                      TeamCrest(url: match.away.logoUrl, size: 54),
                       const SizedBox(height: 9),
                       Text(match.away.name, maxLines: 2, textAlign: TextAlign.center,
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
