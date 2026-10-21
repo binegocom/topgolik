@@ -66,3 +66,12 @@ Failure logs alone are **not** a delivered push/email alert: connect the configu
 ## Explicit cross-provider duplicate suppression
 
 Database match IDs always retain their source identity. The additive `match_aliases` table stores operator-approved source-to-canonical references. `matches:link-verified CANONICAL_ID DUPLICATE_ID` verifies matching league countries, exactly matching normalized team names, kickoff times (30-minute tolerance) and non-conflicting completed scores. The command **does not write** without `--confirm`. No fuzzy or speculative automatic merging is permitted. Once explicitly linked, duplicate aliases are suppressed from match list, team match list and calculated league standings; existing detail URLs remain readable for audit. Never edit or delete source matches as part of aliasing. New upstream identities and corrected kickoff times must be reviewed again before linking. Synonyms and different spelling require independent verified team mapping in a future revision.
+
+## Verified source-scoped match details
+
+GET /api/v1/matches/{id}/center reads additional data only for an existing ESPN source match with validated stored league/event identifiers.
+The backend caches live summaries for 45 seconds and non-live summaries for one hour. Team stats are matched by provider team IDs, never by incoming array positions.
+Lineup entries and key timeline events are only shown when actually present. Other providers return an explicit unsupported state; errors and schema mismatches fail closed.
+No fake news, athlete identities, event minutes or match statistics are synthesized. ESPN is an unofficial, undocumented provider and commercial reuse must be approved before production.
+
+Provider freshness checks are keyed to the current UTC target date; successful tomorrow prefetches do not mask a missing current-day sync. These checks cannot prove every expected match is present.

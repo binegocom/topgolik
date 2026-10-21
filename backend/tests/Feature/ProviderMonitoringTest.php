@@ -69,6 +69,21 @@ final class ProviderMonitoringTest extends TestCase
         $this->artisan('matches:check-providers --max-age-minutes=bogus')->assertExitCode(1);
     }
 
+    public function test_tomorrow_prefetch_cannot_mask_missing_todays_results(): void
+    {
+        (new ProviderSyncRecorder)->run(
+            'espn', 'tur.1', now('UTC')->addDay()->format('Ymd'),
+            static fn (): array => ['fetched' => 1, 'stored' => 1],
+        );
+        $this->artisan('matches:check-providers')->assertExitCode(1);
+
+        (new ProviderSyncRecorder)->run(
+            'espn', 'tur.1', now('UTC')->format('Ymd'),
+            static fn (): array => ['fetched' => 2, 'stored' => 2],
+        );
+        $this->artisan('matches:check-providers')->assertExitCode(0);
+    }
+
     public function test_disabled_provider_does_not_trigger_false_alert(): void
     {
         config()->set('topgolik.espn.leagues', []);

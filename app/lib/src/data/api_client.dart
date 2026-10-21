@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/football_match.dart';
 import '../models/team_search.dart';
 import '../models/league_standings.dart';
+import '../models/match_center.dart';
 import '../models/premier_league_player.dart';
 
 class MatchPage {
@@ -112,6 +113,11 @@ class TopgolikApi {
       if (term.isNotEmpty) 'q': term,
     });
     return PlayerSearchResponse.fromJson(data);
+  }
+
+  Future<MatchCenterData> matchCenter(int id) async {
+    final response = await _get('/matches/$id/center');
+    return MatchCenterData.fromJson(response);
   }
 
   void dispose() => _client.close();
