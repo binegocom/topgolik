@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 use App\Data\EspnMatchParser;
 use App\Services\MatchIngestor;
+use App\Services\ProviderSyncRecorder;
 use App\Services\Providers\OpenLigaDbScoreProvider;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -12,7 +13,7 @@ final class SyncOpenLigaMatches extends Command
     protected $signature = 'matches:sync-openliga {--date=today : today, tomorrow or YYYY-MM-DD}';
     protected $description = 'Collect OpenLigaDB current-matchday football results';
 
-    public function handle(OpenLigaDbScoreProvider $provider, EspnMatchParser $parser): int
+    public function handle(OpenLigaDbScoreProvider $provider, EspnMatchParser $parser, ProviderSyncRecorder $recorder): int
     {
         $option = (string) $this->option('date');
         $date = match ($option) {
@@ -36,7 +37,8 @@ final class SyncOpenLigaMatches extends Command
         $failures = 0;
         foreach ($leagues as $league) {
             try {
-                $totals = $ingestor->ingest($league, str_replace('-', '', $date));
+                $totals = $recorder->run('openligadb', $league, str_replace('-', '', $date),
+                    fn (): array => $ingestor->ingest($league, str_replace('-', '', $date)));
                 $this->line("{$league}: {$totals['stored']} stored / {$totals['fetched']} returned");
             } catch (\Throwable $exception) {
                 $failures++;

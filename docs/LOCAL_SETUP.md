@@ -22,3 +22,12 @@ To run the app, open `app/`, install Flutter dependencies and generate platform 
 GitHub Actions uploads a `topgolik-android-debug` APK and an unsigned `topgolik-ios-simulator` application tarball after successful checks. In GitHub, open **Actions**, select a successful main-branch workflow run, and download the artifact under **Artifacts**. Artifacts expire after seven days. iOS Simulator packages only run in the simulator; they are **not** signed iPhone IPAs or App Store builds.
 
 The Android debug APK is not a production release or store-ready AAB. Actual signed releases require verified `applicationId`, bundle identifiers, keystores/certificates, privacy manifests, in-app assets and connected live API infrastructure.
+
+## Data sync diagnostics
+
+```sh
+docker compose exec api php artisan matches:check-providers --max-age-minutes=45
+docker compose logs --tail=150 scheduler
+```
+
+When the health command fails, inspect `provider_sync_runs` for affected leagues and upstream permission/rate limits. An empty installation needs an initial successful provider sync before the health check passes. In a production setup feed log warnings to a real alert destination, verify receipt and maintain bounded retention for historical monitoring rows according to your policy.
