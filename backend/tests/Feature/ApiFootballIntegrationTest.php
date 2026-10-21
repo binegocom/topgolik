@@ -140,6 +140,28 @@ final class ApiFootballIntegrationTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_list_only_discovers_source_verified_league_ids_without_importing_teams(): void
+    {
+        Http::fake([
+            'v3.football.api-sports.io/leagues*' => Http::response($this->leagues()),
+        ]);
+
+        $this->artisan('api-football:sync', [
+            '--country' => 'Turkey',
+            '--season' => '2026',
+            '--list-only' => true,
+        ])->expectsOutputToContain('777 | 3. Lig - Group 1')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('leagues', [
+            'provider' => 'apifootball',
+            'external_id' => '777:2026',
+        ]);
+        $this->assertDatabaseCount('teams', 0);
+        $this->assertDatabaseCount('football_matches', 0);
+        Http::assertSentCount(1);
+    }
+
     public function test_budget_blocks_extra_call_without_leaking_key(): void
     {
         config()->set('topgolik.api_football.daily_budget', 1);
