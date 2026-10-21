@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/football_match.dart';
 import '../models/team_search.dart';
+import '../models/league_standings.dart';
 
 class MatchPage {
   const MatchPage({required this.items, required this.currentPage, required this.lastPage});
@@ -89,6 +90,18 @@ class TopgolikApi {
       currentPage: (meta['current_page'] as num).toInt(),
       lastPage: (meta['last_page'] as num).toInt(),
     );
+  }
+
+  Future<LeagueStandings> standings({
+    required int leagueId,
+    required int season,
+    int seasonStartMonth = 7,
+  }) async {
+    final data = await _get('/leagues/$leagueId/standings', {
+      'season': season.toString(),
+      'season_start_month': seasonStartMonth.toString(),
+    });
+    return LeagueStandings.fromJson(data);
   }
 
   void dispose() => _client.close();

@@ -29,12 +29,35 @@ final class MatchIngestor
             ? (string) $leagueData['name'] : $leagueId;
         $country = is_array($leagueData) && isset($leagueData['country']['name'])
             ? (string) $leagueData['country']['name'] : null;
-        DB::transaction(function () use ($leagueId, $name, $country, $matches): void {
+        $source = $this->provider->id();
+        DB::transaction(function () use ($leagueId, $name, $country, $matches, $source): void {
             $league = League::updateOrCreate(
                 ['provider' => $this->provider->id(), 'external_id' => $leagueId],
                 ['name' => $name, 'country' => $country, 'synced_at' => now()],
             );
+            // One batched lock/query, rather than a separate SELECT per match.
+            // A partial or stale provider response must not revert final scores.
+            $previous = FootballMatch::query()
+                ->where('provider', $source)
+                ->whereIn('external_id', array_column($matches, 'external_id'))
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('external_id');
+
             foreach ($matches as $match) {
+                $existing = $previous->get($match['external_id']);
+                $incomingStatus = $match['status'];
+                if ($existing && $existing->status === 'finished' && $incomingStatus !== 'finished') {
+                    // Finished matches may receive corrections, but never an accidental
+                    // downgrade to a stale scheduled/live/unknown provider snapshot.
+                    continue;
+                }
+                $retainScores = $existing
+                    && in_array($existing->status, ['live', 'finished'], true)
+                    && in_array($incomingStatus, ['live', 'finished'], true);
+                $homeScore = $match['home']['score'] ?? ($retainScores ? $existing->home_score : null);
+                $awayScore = $match['away']['score'] ?? ($retainScores ? $existing->away_score : null);
+
                 $home = $this->saveTeam($match['home']);
                 $away = $this->saveTeam($match['away']);
                 FootballMatch::updateOrCreate(
@@ -46,8 +69,8 @@ final class MatchIngestor
                         'starts_at' => $match['starts_at'],
                         'status' => $match['status'],
                         'status_detail' => $match['status_detail'],
-                        'home_score' => $match['home']['score'],
-                        'away_score' => $match['away']['score'],
+                        'home_score' => $homeScore,
+                        'away_score' => $awayScore,
                         'synced_at' => now(),
                     ],
                 );
