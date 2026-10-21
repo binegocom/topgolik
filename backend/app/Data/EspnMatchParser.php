@@ -30,6 +30,9 @@ final class EspnMatchParser
                     $score = is_array($raw) ? ($raw['value'] ?? null) : $raw;
                     $logos = $team['logos'] ?? [];
                     $logo = is_array($logos) ? ($logos[0]['href'] ?? null) : null;
+                    if (! is_string($logo) || $logo === '') {
+                        $logo = $team['logo'] ?? null;
+                    }
                     $sides[$side] = [
                         'external_id' => (string) $team['id'],
                         'name' => (string) $team['displayName'],

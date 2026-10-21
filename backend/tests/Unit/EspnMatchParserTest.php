@@ -28,6 +28,19 @@ final class EspnMatchParserTest extends TestCase
         self::assertSame('live', $match['status']);
     }
 
+    public function test_uses_source_direct_logo_url_when_logo_array_is_missing(): void
+    {
+        $payload = $this->fixture();
+        $payload['events'][0]['competitions'][0]['competitors'][1]['team']['logo']
+            = 'https://a.espncdn.com/i/teamlogos/soccer/500/9.png';
+
+        $match = (new EspnMatchParser)->parse($payload)[0];
+        self::assertSame(
+            'https://a.espncdn.com/i/teamlogos/soccer/500/9.png',
+            $match['home']['logo_url'],
+        );
+    }
+
     public function test_invalid_event_is_skipped_without_inventing_data(): void
     {
         self::assertSame([], (new EspnMatchParser)->parse(['events' => [['id' => '3']]]));
