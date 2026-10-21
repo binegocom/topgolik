@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import '../../models/football_match.dart';
 
 abstract final class StadiumColors {
-  static const background = Color(0xFF030C13);
-  static const surface = Color(0xFF0B1A25);
-  static const raised = Color(0xFF112737);
-  static const border = Color(0xFF203746);
-  static const green = Color(0xFF28EC7B);
-  static const muted = Color(0xFFA2B1BC);
-  static const red = Color(0xFFFF344F);
+  static const background = Color(0xFF080F1A);
+  static const surface = Color(0xFF101D2D);
+  static const raised = Color(0xFF192B40);
+  static const border = Color(0xFF263A50);
+  static const green = Color(0xFF42E0AD);
+  static const blue = Color(0xFF5B9DFF);
+  static const muted = Color(0xFF92A5BA);
+  static const red = Color(0xFFFF6479);
 }
 
 class TopgolikWordmark extends StatelessWidget {
@@ -21,18 +22,32 @@ class TopgolikWordmark extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
-        width: size + 10, height: size + 10,
+        width: size + 11,
+        height: size + 11,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: StadiumColors.green, width: 1.6),
+          gradient: const LinearGradient(
+            colors: [StadiumColors.blue, Color(0xFF3474E8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: const [
+            BoxShadow(color: Color(0x334A8DFF), blurRadius: 16, offset: Offset(0, 5)),
+          ],
         ),
-        child: const Icon(Icons.sports_soccer, color: Colors.white),
+        child: Icon(Icons.sports_soccer_rounded, color: Colors.white, size: size * .87),
       ),
-      const SizedBox(width: 7),
+      const SizedBox(width: 10),
       Text.rich(
         TextSpan(children: [
-          TextSpan(text: 'Top', style: TextStyle(color: Colors.white, fontSize: size, fontStyle: FontStyle.italic, fontWeight: FontWeight.w900)),
-          TextSpan(text: 'golik', style: TextStyle(color: StadiumColors.green, fontSize: size, fontStyle: FontStyle.italic, fontWeight: FontWeight.w900)),
+          TextSpan(text: 'top', style: TextStyle(
+            color: Colors.white, fontSize: size, fontWeight: FontWeight.w900,
+            letterSpacing: -.8,
+          )),
+          TextSpan(text: 'golik', style: TextStyle(
+            color: StadiumColors.blue, fontSize: size, fontWeight: FontWeight.w900,
+            letterSpacing: -.8,
+          )),
         ]),
       ),
     ],
@@ -49,7 +64,7 @@ class TopgolikPanel extends StatelessWidget {
     color: StadiumColors.surface,
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       side: const BorderSide(color: StadiumColors.border),
     ),
     child: Padding(padding: padding, child: child),
@@ -67,16 +82,25 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: [
       if (icon != null) ...[
-        Icon(icon, size: 20, color: StadiumColors.green),
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: StadiumColors.raised,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 17, color: StadiumColors.blue),
+        ),
         const SizedBox(width: 9),
       ],
-      Expanded(child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+      Expanded(child: Text(
+        title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -.25),
+      )),
       if (actionLabel != null && onAction != null)
         TextButton(
           onPressed: onAction,
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text(actionLabel!, style: const TextStyle(color: StadiumColors.muted, fontSize: 12)),
-            const Icon(Icons.chevron_right, color: StadiumColors.muted, size: 18),
+            Text(actionLabel!, style: const TextStyle(color: StadiumColors.blue, fontSize: 12, fontWeight: FontWeight.w700)),
+            const Icon(Icons.chevron_right_rounded, color: StadiumColors.blue, size: 17),
           ]),
         ),
     ],
@@ -92,21 +116,27 @@ class TopgolikPill extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => ChoiceChip(
-    label: Text(label, style: TextStyle(
-      color: selected ? StadiumColors.background : Colors.white,
-      fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-      fontSize: 12,
-    )),
-    selected: selected,
-    onSelected: (_) => onPressed(),
-    showCheckmark: false,
-    side: BorderSide(color: selected ? StadiumColors.green : StadiumColors.border),
-    backgroundColor: StadiumColors.surface,
-    selectedColor: StadiumColors.green,
-    shape: const StadiumBorder(),
-    visualDensity: VisualDensity.compact,
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+  Widget build(BuildContext context) => Material(
+    color: selected ? StadiumColors.blue : StadiumColors.raised,
+    borderRadius: BorderRadius.circular(11),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(11),
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: selected ? StadiumColors.blue : StadiumColors.border,
+          ),
+        ),
+        child: Text(label, style: TextStyle(
+          color: selected ? Colors.white : StadiumColors.muted,
+          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          fontSize: 12,
+        )),
+      ),
+    ),
   );
 }
 
@@ -138,12 +168,21 @@ class TeamCrest extends StatelessWidget {
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(url ?? '');
     final valid = uri?.scheme == 'https';
-    return SizedBox(
-      height: size, width: size,
+    return Container(
+      height: size,
+      width: size,
+      padding: EdgeInsets.all(size >= 32 ? 5 : 3),
+      decoration: BoxDecoration(
+        color: StadiumColors.raised,
+        borderRadius: BorderRadius.circular(size * .32),
+      ),
       child: valid
           ? Image.network(
-              url!, fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Icon(Icons.shield_outlined, color: StadiumColors.muted),
+              url!,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.shield_outlined, color: StadiumColors.muted,
+              ),
             )
           : const Icon(Icons.shield_outlined, color: StadiumColors.muted),
     );
@@ -188,54 +227,111 @@ class FootballMatchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final live = match.isLive;
+    final hasScore = live || match.isFinished;
+    final statusText = live
+        ? (match.statusDetail?.isNotEmpty == true ? match.statusDetail! : 'LIVE')
+        : match.isFinished
+            ? 'FT'
+            : TimeOfDay.fromDateTime(match.startsAt).format(context);
+
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 5, 10),
-        child: Row(children: [
-          SizedBox(
-            width: 48,
-            child: live
-                ? Column(children: [
-                    const Icon(Icons.sensors, color: StadiumColors.red, size: 17),
-                    const SizedBox(height: 3),
-                    Text(match.statusDetail?.isNotEmpty == true ? match.statusDetail! : 'LIVE',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: StadiumColors.red, fontSize: 10, fontWeight: FontWeight.w800)),
-                  ])
-                : Text(
-                    match.isFinished ? 'FT' : TimeOfDay.fromDateTime(match.startsAt).format(context),
+        padding: const EdgeInsets.fromLTRB(12, 11, 5, 11),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 52,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (live)
+                    Container(
+                      width: 6, height: 6,
+                      margin: const EdgeInsets.only(bottom: 5),
+                      decoration: const BoxDecoration(
+                        color: StadiumColors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  Text(
+                    statusText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: StadiumColors.muted, fontSize: 11, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: live ? StadiumColors.red : StadiumColors.muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-          ),
-          const SizedBox(width: 7),
-          Expanded(child: Column(children: [
-            _team(match.home, live || match.isFinished),
-            const SizedBox(height: 9),
-            _team(match.away, live || match.isFinished),
-          ])),
-          IconButton(
-            tooltip: 'Favorite',
-            onPressed: onFavorite,
-            icon: Icon(isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
-              color: isFavorite ? StadiumColors.green : StadiumColors.muted, size: 20),
-          ),
-        ]),
+                ],
+              ),
+            ),
+            Container(
+              width: 2,
+              height: 41,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: live ? StadiumColors.red : StadiumColors.border,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            Expanded(
+              child: Column(
+                children: [
+                  _team(match.home, hasScore, live),
+                  const SizedBox(height: 8),
+                  _team(match.away, hasScore, live),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 43,
+              height: 48,
+              child: IconButton(
+                tooltip: 'Favorite',
+                onPressed: onFavorite,
+                icon: Icon(
+                  isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: isFavorite ? StadiumColors.blue : StadiumColors.muted,
+                  size: 21,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _team(TeamInfo team, bool hasScore) => Row(children: [
-    TeamCrest(url: team.logoUrl, size: 22),
-    const SizedBox(width: 8),
-    Expanded(child: Text(team.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600))),
-    SizedBox(width: 24, child: Text(
-      hasScore ? (team.score?.toString() ?? '–') : '–',
-      textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-    )),
-  ]);
+  Widget _team(TeamInfo team, bool hasScore, bool live) => Row(
+    children: [
+      TeamCrest(url: team.logoUrl, size: 24),
+      const SizedBox(width: 9),
+      Expanded(
+        child: Text(
+          team.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+        ),
+      ),
+      const SizedBox(width: 5),
+      SizedBox(
+        width: 23,
+        child: Text(
+          hasScore ? (team.score?.toString() ?? '–') : '–',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: live ? StadiumColors.green : Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 class LeagueMatchPanel extends StatelessWidget {
@@ -255,32 +351,58 @@ class LeagueMatchPanel extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 12),
     child: TopgolikPanel(
       padding: EdgeInsets.zero,
-      child: Column(children: [
-        InkWell(
-          onTap: onLeague,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(children: [
-              const Icon(Icons.emoji_events_outlined, size: 19, color: StadiumColors.green),
-              const SizedBox(width: 10),
-              Expanded(child: Text(league.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13))),
-              if (league.country != null)
-                Flexible(child: Text(league.country!, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: StadiumColors.muted, fontSize: 10))),
-              if (onLeague != null) const Icon(Icons.chevron_right, color: StadiumColors.muted),
-            ]),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: onLeague,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+              decoration: const BoxDecoration(color: StadiumColors.raised),
+              child: Row(
+                children: [
+                  const Icon(Icons.emoji_events_rounded, size: 19, color: StadiumColors.blue),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          league.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                        ),
+                        if (league.country?.isNotEmpty == true)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              league.country!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: StadiumColors.muted, fontSize: 10),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (onLeague != null)
+                    const Icon(Icons.chevron_right_rounded, color: StadiumColors.muted, size: 19),
+                ],
+              ),
+            ),
           ),
-        ),
-        const Divider(color: StadiumColors.border, height: 1),
-        for (final match in matches)
-          FootballMatchTile(
-            match: match,
-            isFavorite: favorites.contains(match.id),
-            onFavorite: () => onFavorite(match.id),
-            onTap: () => onMatch(match),
-          ),
-      ]),
+          for (var index = 0; index < matches.length; index++) ...[
+            if (index > 0)
+              const Divider(height: 1, indent: 12, endIndent: 12, color: StadiumColors.border),
+            FootballMatchTile(
+              match: matches[index],
+              isFavorite: favorites.contains(matches[index].id),
+              onFavorite: () => onFavorite(matches[index].id),
+              onTap: () => onMatch(matches[index]),
+            ),
+          ],
+        ],
+      ),
     ),
   );
 }
